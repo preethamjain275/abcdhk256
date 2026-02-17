@@ -69,58 +69,58 @@ export function ProductCarousel({
     <div className={cn('relative', className)}>
       {/* Header */}
       {(title || subtitle) && (
-        <div className="mb-6 flex items-end justify-between">
-          <div>
+        <div className="mb-10 flex items-end justify-between">
+          <div className="space-y-1">
             {title && (
-              <h2 className="font-display text-2xl font-semibold md:text-3xl">
+              <h2 className="text-3xl md:text-5xl font-black tracking-tight">
                 {title}
               </h2>
             )}
             {subtitle && (
-              <p className="mt-1 text-muted-foreground">{subtitle}</p>
+              <p className="text-sm md:text-base font-medium text-muted-foreground uppercase tracking-widest">{subtitle}</p>
             )}
           </div>
           
           {/* Navigation Buttons */}
           {showNavigation && products.length > 3 && (
-            <div className="hidden gap-2 md:flex">
+            <div className="hidden gap-3 md:flex">
               <button
                 onClick={() => scroll('left')}
                 disabled={!canScrollLeft}
                 className={cn(
-                  'rounded-full border border-border p-2 transition-all',
+                  'h-14 w-14 rounded-2xl glass flex items-center justify-center transition-all duration-300',
                   canScrollLeft
-                    ? 'hover:border-primary hover:bg-primary hover:text-primary-foreground'
-                    : 'cursor-not-allowed opacity-30'
+                    ? 'hover:bg-primary hover:text-white border-white/20 shadow-lg'
+                    : 'cursor-not-allowed opacity-20'
                 )}
               >
-                <ChevronLeft className="h-5 w-5" />
+                <ChevronLeft className="h-6 w-6" />
               </button>
               <button
                 onClick={() => scroll('right')}
                 disabled={!canScrollRight}
                 className={cn(
-                  'rounded-full border border-border p-2 transition-all',
+                  'h-14 w-14 rounded-2xl glass flex items-center justify-center transition-all duration-300',
                   canScrollRight
-                    ? 'hover:border-primary hover:bg-primary hover:text-primary-foreground'
-                    : 'cursor-not-allowed opacity-30'
+                    ? 'hover:bg-primary hover:text-white border-white/20 shadow-lg'
+                    : 'cursor-not-allowed opacity-20'
                 )}
               >
-                <ChevronRight className="h-5 w-5" />
+                <ChevronRight className="h-6 w-6" />
               </button>
             </div>
           )}
         </div>
       )}
 
-      {/* Carousel */}
-      <div className="relative -mx-4 px-4 md:-mx-6 md:px-6">
+      {/* Carousel Container */}
+      <div className="relative -mx-4 px-4 md:-mx-8 md:px-8">
         <div
           ref={scrollRef}
-          className="carousel-smooth scrollbar-hide flex gap-4 overflow-x-auto pb-4"
+          className="carousel-smooth scrollbar-hide flex gap-6 md:gap-10 overflow-x-auto pb-12 pt-4"
         >
           {products.map((product) => (
-            <div key={product.id} className={cn('shrink-0', cardWidth)}>
+            <div key={product.id} className={cn('shrink-0 transition-transform duration-500 hover:scale-[1.02]', cardWidth)}>
               <ProductCard product={product} variant={variant} />
             </div>
           ))}
@@ -128,10 +128,10 @@ export function ProductCarousel({
 
         {/* Gradient Edges */}
         {canScrollLeft && (
-          <div className="pointer-events-none absolute left-0 top-0 h-full w-12 bg-gradient-to-r from-background to-transparent md:w-20" />
+          <div className="pointer-events-none absolute left-0 top-0 z-10 h-full w-24 bg-gradient-to-r from-background via-background/60 to-transparent" />
         )}
         {canScrollRight && (
-          <div className="pointer-events-none absolute right-0 top-0 h-full w-12 bg-gradient-to-l from-background to-transparent md:w-20" />
+          <div className="pointer-events-none absolute right-0 top-0 z-10 h-full w-24 bg-gradient-to-l from-background via-background/60 to-transparent" />
         )}
       </div>
     </div>

@@ -20,6 +20,7 @@ import {
   Shield,
   RefreshCw,
   Sparkles,
+  Video,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -154,12 +155,30 @@ export default function ProductDetail() {
           <div className="space-y-4">
             <div className="relative aspect-square overflow-hidden rounded-2xl bg-muted group">
               {showVideo && product.videoUrl ? (
-                <video 
-                  src={product.videoUrl} 
-                  autoPlay 
-                  controls 
-                  className="h-full w-full object-cover"
-                />
+                <div className="h-full w-full">
+                  {product.videoUrl.includes('youtube.com') || product.videoUrl.includes('youtu.be') ? (
+                    <iframe
+                      src={`https://www.youtube.com/embed/${product.videoUrl.split('v=')[1]?.split('&')[0] || product.videoUrl.split('/').pop()}`}
+                      className="h-full w-full border-0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    />
+                  ) : product.videoUrl.includes('vimeo.com') ? (
+                    <iframe
+                      src={`https://player.vimeo.com/video/${product.videoUrl.split('/').pop()}`}
+                      className="h-full w-full border-0"
+                      allow="autoplay; fullscreen; picture-in-picture"
+                      allowFullScreen
+                    />
+                  ) : (
+                    <video 
+                      src={product.videoUrl} 
+                      autoPlay 
+                      controls 
+                      className="h-full w-full object-cover"
+                    />
+                  )}
+                </div>
               ) : (
                 <img
                   src={product.images[selectedImage]}
@@ -181,7 +200,7 @@ export default function ProductDetail() {
                   onClick={() => setShowVideo(!showVideo)}
                   className="absolute bottom-4 right-4 rounded-full bg-black/50 p-3 text-white backdrop-blur-md transition-all hover:bg-primary z-10"
                 >
-                  <Sparkles className="h-5 w-5" />
+                  <Video className="h-5 w-5" />
                 </button>
               )}
             </div>
@@ -456,7 +475,50 @@ export default function ProductDetail() {
               </p>
             </div>
 
-            {/* Features */}
+            {/* Features & Specifications */}
+            <div className="mt-8 space-y-8">
+              {product.attributes?.features && product.attributes.features.length > 0 && (
+                <div className="rounded-2xl border border-border bg-card/50 p-6">
+                  <h3 className="text-sm font-black uppercase tracking-widest text-foreground mb-4 flex items-center gap-2">
+                    <Sparkles className="h-4 w-4 text-primary" />
+                    Key Specifications
+                  </h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4">
+                    {product.attributes.features.map((feature, i) => (
+                      <div key={i} className="flex justify-between border-b border-border/50 pb-2">
+                        <span className="text-xs font-bold text-muted-foreground">{feature.key}</span>
+                        <span className="text-xs font-black text-foreground">{feature.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {product.attributes?.links && product.attributes.links.length > 0 && (
+                <div className="rounded-2xl border border-border bg-card/50 p-6">
+                  <h3 className="text-sm font-black uppercase tracking-widest text-foreground mb-4 flex items-center gap-2">
+                    <Share2 className="h-4 w-4 text-primary" />
+                    Helpful Resources
+                  </h3>
+                  <div className="flex flex-wrap gap-3">
+                    {product.attributes.links.map((link, i) => (
+                      <a 
+                        key={i} 
+                        href={link.url} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 px-4 py-2 bg-secondary/50 hover:bg-primary/10 hover:text-primary rounded-xl text-xs font-bold transition-all border border-border group"
+                      >
+                        {link.label}
+                        <ArrowLeft className="h-3 w-3 rotate-180 group-hover:translate-x-1 transition-transform" />
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Existing Fixed Features */}
             <div className="mt-8 grid grid-cols-3 gap-4">
               <div className="flex flex-col items-center gap-2 rounded-xl bg-secondary/50 p-4 text-center">
                 <Truck className="h-6 w-6 text-primary" />

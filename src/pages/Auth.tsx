@@ -21,6 +21,8 @@ export default function Auth() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string; confirmPassword?: string }>({});
 
   // Redirect if already logged in
@@ -50,6 +52,27 @@ export default function Auth() {
 
     setErrors({});
     return true;
+  };
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) {
+      setErrors({ email: 'Email is required' });
+      return;
+    }
+    setIsLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth?reset=true`,
+      });
+      if (error) throw error;
+      setResetSent(true);
+      toast.success('Password reset link sent to your email!');
+    } catch (error: any) {
+      toast.error(error.message);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -111,16 +134,50 @@ export default function Auth() {
           <div className="rounded-2xl bg-card p-8">
             <div className="mb-8 text-center">
               <h1 className="font-display text-2xl font-bold">
-                {isSignUp ? 'Create Account' : 'Welcome Back'}
+                {isForgotPassword ? 'Reset Password' : isSignUp ? 'Create Account' : 'Welcome Back'}
               </h1>
               <p className="mt-2 text-muted-foreground">
-                {isSignUp
-                  ? 'Sign up to start shopping'
-                  : 'Sign in to continue shopping'}
+                {isForgotPassword 
+                  ? 'Enter your email to receive a reset link'
+                  : isSignUp
+                    ? 'Sign up to start shopping'
+                    : 'Sign in to continue shopping'}
               </p>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            {isForgotPassword ? (
+              <form onSubmit={handleForgotPassword} className="space-y-4">
+                <div>
+                  <label className="mb-2 block text-sm font-medium">Email</label>
+                  <div className="relative">
+                    <Mail className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="you@example.com"
+                      className="w-full rounded-xl border border-border bg-background py-3 pl-11 pr-4 outline-none transition-colors focus:border-primary"
+                    />
+                  </div>
+                </div>
+                <button
+                  type="submit"
+                  disabled={isLoading || resetSent}
+                  className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3 font-medium text-primary-foreground transition-all hover:shadow-glow disabled:opacity-50"
+                >
+                  {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
+                  {resetSent ? 'Link Sent' : 'Send Reset Link'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsForgotPassword(false)}
+                  className="w-full text-center text-sm font-medium text-muted-foreground hover:text-foreground mt-4"
+                >
+                  Back to Sign In
+                </button>
+              </form>
+            ) : (
+              <form onSubmit={handleSubmit} className="space-y-4">
               {/* Email */}
               <div>
                 <label className="mb-2 block text-sm font-medium">Email</label>
@@ -162,6 +219,17 @@ export default function Auth() {
                 {errors.password && (
                   <p className="mt-1 text-sm text-destructive">{errors.password}</p>
                 )}
+                {!isSignUp && (
+                  <div className="mt-2 text-right">
+                    <button
+                      type="button"
+                      onClick={() => setIsForgotPassword(true)}
+                      className="text-xs font-medium text-primary hover:underline"
+                    >
+                      Forgot Password?
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* Confirm Password (Sign Up only) */}
@@ -193,7 +261,8 @@ export default function Auth() {
                 {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
                 {isSignUp ? 'Create Account' : 'Sign In'}
               </button>
-            </form>
+              </form>
+            )}
 
             {/* Toggle Sign In / Sign Up */}
             <div className="mt-6 text-center">

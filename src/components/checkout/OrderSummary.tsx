@@ -9,11 +9,12 @@ interface OrderSummaryProps {
   shipping: number;
   tax: number;
   total: number;
+  handlingFee?: number;
   discount?: number;
   onApplyCoupon?: (code: string) => void;
 }
 
-export function OrderSummary({ items, subtotal, shipping, tax, total, discount = 0, onApplyCoupon }: OrderSummaryProps) {
+export function OrderSummary({ items, subtotal, shipping, tax, total, handlingFee = 0, discount = 0, onApplyCoupon }: OrderSummaryProps) {
   const [couponInput, setCouponInput] = useState('');
 
   return (
@@ -95,6 +96,13 @@ export function OrderSummary({ items, subtotal, shipping, tax, total, discount =
           <span className="text-muted-foreground">GST (18%)</span>
           <span>{formatPrice(tax)}</span>
         </div>
+
+        {handlingFee > 0 && (
+          <div className="flex justify-between text-sm font-medium">
+            <span className="text-muted-foreground">COD Handling Fee</span>
+            <span>{formatPrice(handlingFee)}</span>
+          </div>
+        )}
         
         {discount > 0 && (
           <div className="flex justify-between text-sm font-bold text-success animate-in slide-in-from-right-2">

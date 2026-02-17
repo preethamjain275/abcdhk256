@@ -12,6 +12,8 @@ import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { paymentService } from '@/services/paymentService';
+import { LuxePayGateway } from '@/components/checkout/LuxePayGateway';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const ADDRESSES_STORAGE_KEY = 'ecommerce-addresses';
 
@@ -27,13 +29,15 @@ export default function Checkout() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [placedOrder, setPlacedOrder] = useState<Order | null>(null);
+  const [showLuxePay, setShowLuxePay] = useState(false);
 
   const [couponCode, setCouponCode] = useState('');
   const [discount, setDiscount] = useState(0);
 
   const shipping = cartTotal > 1000 ? 0 : 99;
+  const handlingFee = selectedPayment === 'cod' ? 5 : 0;
   const tax = cartTotal * 0.18;
-  const totalBeforeDiscount = cartTotal + shipping + tax;
+  const totalBeforeDiscount = cartTotal + shipping + tax + handlingFee;
   const total = totalBeforeDiscount - discount;
 
   // Load saved addresses
@@ -116,49 +120,11 @@ export default function Checkout() {
     ];
   };
 
-  const handlePlaceOrder = async () => {
-    if (!selectedAddress) {
-      toast.error('Please select a delivery address');
-      return;
-    }
-    if (!selectedPayment) {
-      toast.error('Please select a payment method');
-      return;
-    }
-    if (!user) {
-      toast.error('You must be signed in to place an order');
-      navigate('/auth');
-      return;
-    }
-
+  const finalizeOrder = async (transactionData: any) => {
+    if (!selectedAddress || !user || !selectedPayment) return;
+    
     setIsProcessing(true);
-
     try {
-      // 0. Handle Online Payment first (if not COD/Sandbox)
-      let transactionData = paymentData || {};
-      
-      if (selectedPayment !== 'cod') {
-        try {
-          // Add a small delay for "Security Handshake" feeling
-          await new Promise(r => setTimeout(r, 800));
-          
-          const razorpayResponse = await paymentService.processRazorpayPayment({
-            amount: total,
-            userName: user.email?.split('@')[0] || 'Customer',
-            userEmail: user.email || '',
-            userContact: selectedAddress.phone || '', 
-            orderId: `ORD-${Math.random().toString(36).substring(2, 9).toUpperCase()}`,
-          });
-          transactionData = { ...transactionData, razorpay: razorpayResponse, paid: true };
-        } catch (payError) {
-          console.error('Payment cancelled or failed:', payError);
-          setIsProcessing(false);
-          toast.error('Payment process was interrupted. Please try again.');
-          return;
-        }
-      }
-
-
       // 1. Create order in Supabase
       const orderData = {
         user_id: user.id,
@@ -167,6 +133,7 @@ export default function Checkout() {
         shipping,
         tax,
         total,
+        handling_fee: handlingFee,
         shipping_address: selectedAddress,
         payment_method: selectedPayment,
         payment_details: transactionData,
@@ -189,8 +156,8 @@ export default function Checkout() {
         product_id: item.product.id,
         quantity: item.quantity,
         price_at_purchase: item.product.price,
-        selected_size: item.selectedSize || '',
-        selected_color: item.selectedColor || ''
+        selected_size: item.selectedSize || 'N/A',
+        selected_color: item.selectedColor || 'N/A'
       }));
 
       const { error: itemsError } = await supabase
@@ -200,32 +167,26 @@ export default function Checkout() {
       if (itemsError) throw itemsError;
 
       // 3. Create transaction record
-      const { error: transactionError } = await supabase.from('transactions').insert({
+      const { error: transError } = await supabase.from('transactions').insert({
         order_id: orderResult.id,
         user_id: user.id,
         payment_mode: selectedPayment,
         amount: total,
-        status: selectedPayment === 'cod' ? 'pending' : 'completed',
+        status: 'completed',
+        transaction_id: transactionData.transactionId || `PAY-${Date.now()}`
       } as any);
 
-      if (transactionError) {
-        console.warn('Transaction record failed:', transactionError);
-        // We don't throw here to avoid blocking a successful order, 
-        // but we log it for debugging.
-      }
+      if (transError) console.error('Transaction record error:', transError);
 
       // 4. Create notification
-      const { error: notificationError } = await supabase.from('notifications').insert({
+      await supabase.from('notifications').insert({
         user_id: user.id,
         type: 'order_placed',
         title: 'Order Placed Successfully',
         body: `Your order #${orderResult.id.slice(0, 8)} has been placed and is being processed.`,
         data: { orderId: orderResult.id },
+        read: false
       } as any);
-
-      if (notificationError) {
-        console.warn('Notification failed:', notificationError);
-      }
 
       // Construct local order object for display
       const order: Order = {
@@ -237,6 +198,7 @@ export default function Checkout() {
         shipping,
         tax,
         total,
+        handlingFee,
         status: 'confirmed',
         createdAt: orderResult.created_at,
         estimatedDelivery: orderResult.estimated_delivery,
@@ -249,16 +211,34 @@ export default function Checkout() {
       toast.success('Order placed successfully!');
       
     } catch (error: any) {
-      console.error('CRITICAL Order placement error details:', {
-        message: error?.message,
-        details: error?.details,
-        hint: error?.hint,
-        code: error?.code,
-        fullError: error
-      });
-      toast.error(`Failed to place order: ${error?.message || 'Network or Database error'}`);
+      console.error('Order placement error:', error);
+      toast.error(`Order Failed: ${error?.message || 'Transaction error'}`);
     } finally {
       setIsProcessing(false);
+    }
+  };
+   
+  const handlePlaceOrder = async () => {
+    if (!selectedAddress) {
+      toast.error('Please select a delivery address');
+      return;
+    }
+    if (!selectedPayment) {
+      toast.error('Please select a payment method');
+      return;
+    }
+    if (!user) {
+      toast.error('You must be signed in to place an order');
+      navigate('/auth');
+      return;
+    }
+
+    setIsProcessing(true);
+
+    if (selectedPayment !== 'cod') {
+      setShowLuxePay(true);
+    } else {
+      finalizeOrder({ method: 'cod', paid: false });
     }
   };
 
@@ -425,6 +405,24 @@ export default function Checkout() {
   return (
     <Layout>
       <div className="container py-8 relative">
+        <AnimatePresence>
+          {showLuxePay && (
+            <LuxePayGateway 
+              amount={total}
+              orderId={`ORD-${Math.random().toString(36).substring(2, 9).toUpperCase()}`}
+              onSuccess={(details) => {
+                setPaymentData(details);
+                setShowLuxePay(false);
+                // Trigger the final order placement logic
+                finalizeOrder(details);
+              }}
+              onCancel={() => {
+                setShowLuxePay(false);
+                setIsProcessing(false);
+              }}
+            />
+          )}
+        </AnimatePresence>
         {/* Processing Overlay */}
         {isProcessing && (
           <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-background/80 backdrop-blur-xl animate-in fade-in duration-300">

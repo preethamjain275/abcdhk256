@@ -46,22 +46,31 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         setIsSyncing(true);
         try {
           // Fetch from Supabase
-          const { data: dbItems, error } = await supabase
+          const { data: dbItems, error } = await (supabase
             .from('cart_items')
-            .select('*, products(*)');
+            .select('*, products(*)') as any);
 
           if (!error && dbItems) {
-             const mappedItems: CartItem[] = dbItems.map(item => ({
-                product: {
-                    id: item.products.id,
-                    name: item.products.name,
-                    price: Number(item.products.price),
-                    images: item.products.images,
-                    // ... other fields as needed
-                } as Product,
-                quantity: item.quantity,
-                addedAt: item.created_at
-             }));
+             const mappedItems: CartItem[] = (dbItems as any[]).map(item => {
+                const p = item.products;
+                // Use a more robust mapping that includes all required fields
+                const product: Product = {
+                    ...p,
+                    price: Number(p.price),
+                    originalPrice: p.original_price ? Number(p.original_price) : undefined,
+                    reviewCount: p.review_count || 0,
+                    images: p.images || [],
+                    createdAt: p.created_at
+                } as any; 
+                
+                return {
+                    product,
+                    quantity: item.quantity,
+                    addedAt: item.created_at,
+                    selectedSize: item.selected_size,
+                    selectedColor: item.selected_color
+                };
+             });
 
              // Merge strategy: if local has items, maybe we should push them to DB?
              // For simplicity, we prioritize DB if logged in, but if local had items during transition, we merge.
@@ -69,7 +78,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
                  // Push local items to DB if they don't exist
                  for (const item of localCart) {
                      if (!mappedItems.some(mi => mi.product.id === item.product.id)) {
-                         await supabase.from('cart_items').insert({
+                         await (supabase.from('cart_items') as any).insert({
                              user_id: user.id,
                              product_id: item.product.id,
                              quantity: item.quantity
@@ -138,21 +147,21 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
     if (user) {
         // DB update
-        const { data: existing } = await supabase
+        const { data: existing } = await (supabase
             .from('cart_items')
             .select('id, quantity')
             .eq('user_id', user.id)
             .eq('product_id', product.id)
             .eq('selected_size', size || '')
             .eq('selected_color', color || '')
-            .single();
+            .single() as any);
 
         if (existing) {
-            await supabase.from('cart_items')
+            await (supabase.from('cart_items') as any)
                 .update({ quantity: existing.quantity + quantity })
-                .eq('id', existing.id);
+                .eq('id', (existing as any).id);
         } else {
-            await supabase.from('cart_items').insert({
+            await (supabase.from('cart_items') as any).insert({
                 user_id: user.id,
                 product_id: product.id,
                 quantity: quantity,
@@ -167,7 +176,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setCartItems(prev => prev.filter(item => item.product.id !== productId));
     
     if (user) {
-        await supabase.from('cart_items')
+        await (supabase.from('cart_items') as any)
             .delete()
             .eq('user_id', user.id)
             .eq('product_id', productId);
@@ -185,8 +194,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     ));
 
     if (user) {
-        await supabase.from('cart_items')
-            .update({ quantity })
+        await (supabase.from('cart_items') as any)
+            .update({ quantity } as any)
             .eq('user_id', user.id)
             .eq('product_id', productId);
     }

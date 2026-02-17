@@ -43,9 +43,21 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   // Apply theme to document
   useEffect(() => {
-    const root = document.documentElement;
+    const root = window.document.documentElement;
+    
+    // Primary classes
     root.classList.remove('light', 'dark');
     root.classList.add(resolvedTheme);
+    
+    // Explicitly set color-scheme for browser UI components (scrollbars, etc)
+    root.style.colorScheme = resolvedTheme;
+    
+    // Extra visual indicators for the CSS
+    if (resolvedTheme === 'dark') {
+      root.setAttribute('data-theme', 'dark');
+    } else {
+      root.setAttribute('data-theme', 'light');
+    }
   }, [resolvedTheme]);
 
   const setTheme = (newTheme: Theme) => {
@@ -54,8 +66,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   };
 
   const toggleTheme = () => {
-    const newTheme = resolvedTheme === 'dark' ? 'light' : 'dark';
-    setTheme(newTheme);
+    const nextTheme = resolvedTheme === 'dark' ? 'light' : 'dark';
+    setTheme(nextTheme);
   };
 
   return (

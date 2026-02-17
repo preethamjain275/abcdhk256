@@ -92,10 +92,10 @@ export default function Products() {
             {/* Category Filter */}
             <div className="space-y-3">
               <p className="text-sm font-bold text-muted-foreground uppercase tracking-widest">Categories</p>
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-2 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
                 <button 
                   onClick={() => setSelectedCategory(null)}
-                  className={cn("text-sm text-left px-2 py-1.5 rounded-lg transition-colors", !selectedCategory ? "bg-primary text-white font-bold" : "hover:bg-secondary")}
+                  className={cn("text-sm text-left px-4 py-2 rounded-xl transition-all", !selectedCategory ? "bg-primary text-white font-bold shadow-lg shadow-primary/20" : "hover:bg-secondary")}
                 >
                   All Categories
                 </button>
@@ -103,7 +103,7 @@ export default function Products() {
                   <button 
                     key={cat.id} 
                     onClick={() => setSelectedCategory(cat.name)}
-                    className={cn("text-sm text-left px-2 py-1.5 rounded-lg transition-colors", selectedCategory === cat.name ? "bg-primary text-white font-bold" : "hover:bg-secondary")}
+                    className={cn("text-sm text-left px-4 py-2 rounded-xl transition-all", selectedCategory === cat.name ? "bg-primary text-white font-bold shadow-lg shadow-primary/20" : "hover:bg-secondary")}
                   >
                     {cat.name}
                   </button>

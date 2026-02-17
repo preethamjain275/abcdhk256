@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Layout } from '@/components/Layout';
 import { ProductCarousel } from '@/components/ProductCarousel';
 import { HeroCarousel } from '@/components/HeroCarousel';
@@ -7,7 +7,8 @@ import { useRecentlyViewed } from '@/contexts/RecentlyViewedContext';
 import { Product } from '@/types';
 import { productService } from '@/services/productService';
 import { recommendationService } from '@/services/recommendationService';
-import { ArrowRight, Timer, CheckCircle, Truck, Shield, RefreshCw, ShoppingBag } from 'lucide-react';
+import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
+import { ArrowRight, Timer, ShoppingBag, Zap, Sparkles, Globe, ShieldCheck, Heart } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { getTimeLeft } from '@/lib/time';
@@ -21,15 +22,34 @@ const categories = [
   { name: 'Beauty', icon: '✨', color: 'bg-red-500' },
   { name: 'Toys', icon: '🎮', color: 'bg-yellow-500' },
   { name: 'Books', icon: '📖', color: 'bg-cyan-500' },
-  { name: 'Mobiles', icon: '📱', color: 'bg-indigo-500' },
-  { name: 'Laptops', icon: '💻', color: 'bg-slate-700' },
-  { name: 'Footwear', icon: '👟', color: 'bg-amber-600' },
-  { name: 'Kitchen', icon: '🍳', color: 'bg-orange-600' },
-  { name: 'Jewelry', icon: '💍', color: 'bg-emerald-500' },
-  { name: 'Sports', icon: '🏆', color: 'bg-lime-600' },
-  { name: 'Travel', icon: '✈️', color: 'bg-sky-500' },
-  { name: 'Decor', icon: '🕯️', color: 'bg-rose-500' },
 ];
+
+const FloatingParticles = () => {
+    return (
+        <div className="absolute inset-0 overflow-hidden pointer-events-none -z-10">
+            {Array.from({ length: 20 }).map((_, i) => (
+                <motion.div
+                    key={i}
+                    className="absolute h-1 w-1 rounded-full bg-primary/20"
+                    initial={{ 
+                        x: Math.random() * 100 + "%", 
+                        y: Math.random() * 100 + "%",
+                        opacity: Math.random() * 0.5
+                    }}
+                    animate={{ 
+                        y: [null, Math.random() * -100 - 50 + "%"],
+                        opacity: [0, 0.5, 0]
+                    }}
+                    transition={{ 
+                        duration: Math.random() * 10 + 10, 
+                        repeat: Infinity,
+                        ease: "linear"
+                    }}
+                />
+            ))}
+        </div>
+    );
+};
 
 export default function Home() {
   const { recentlyViewed } = useRecentlyViewed();
@@ -37,26 +57,32 @@ export default function Home() {
   const [bestsellers, setBestsellers] = useState<Product[]>([]);
   const [trendingProducts, setTrendingProducts] = useState<Product[]>([]);
   const [dealsOfTheDay, setDealsOfTheDay] = useState<Product[]>([]);
-  const [recommendations, setRecommendations] = useState<Product[]>([]);
   const [timeLeft, setTimeLeft] = useState('12h 45m 22s');
   const [isLoading, setIsLoading] = useState(true);
+
+  const containerRef = useRef(null);
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ["start start", "end start"]
+  });
+
+  const heroScale = useTransform(scrollYProgress, [0, 0.3], [1, 1.1]);
+  const heroOpacity = useTransform(scrollYProgress, [0, 0.3], [1, 0]);
 
   useEffect(() => {
     const fetchHomeData = async () => {
       setIsLoading(true);
       try {
-        const [featured, best, trend, recommended, deals] = await Promise.all([
+        const [featured, best, trend, deals] = await Promise.all([
           productService.getFeaturedProducts(),
           productService.getBestsellers(),
           recommendationService.getTrendingProducts(),
-          recommendationService.getPersonalizedRecommendations(),
           productService.getDealsOfTheDay(),
         ]);
-        setFeaturedProducts(featured);
-        setBestsellers(best);
-        setTrendingProducts(trend);
-        setRecommendations(recommended);
-        setDealsOfTheDay(deals);
+        setFeaturedProducts(featured || []);
+        setBestsellers(best || []);
+        setTrendingProducts(trend || []);
+        setDealsOfTheDay(deals || []);
       } catch (error) {
         console.error('Error fetching home data:', error);
       } finally {
@@ -78,199 +104,237 @@ export default function Home() {
 
   return (
     <Layout>
-      {/* Category Bar */}
-      <div className="bg-card border-b border-border/50 sticky top-14 md:top-16 z-30 overflow-x-auto scrollbar-hide">
-        <div className="container py-4 flex justify-between gap-6 md:gap-8 min-w-max">
-          {categories.map((cat) => (
-            <Link 
-              key={cat.name} 
-              to={`/products?category=${cat.name}`}
-              className="group flex flex-col items-center gap-1.5 transition-transform hover:scale-105"
-            >
-              <div className={cn("flex h-12 w-12 items-center justify-center rounded-2xl text-2xl shadow-sm transition-colors group-hover:shadow-md", cat.color, "bg-opacity-10 text-opacity-100")}>
-                <span className="drop-shadow-sm">{cat.icon}</span>
-              </div>
-              <span className="text-[11px] font-bold text-muted-foreground group-hover:text-primary">{cat.name}</span>
-            </Link>
-          ))}
+      <div ref={containerRef} className="relative premium-gradient min-h-screen">
+        <FloatingParticles />
+        
+        {/* Animated Background Gradients */}
+        <div className="fixed top-0 left-0 w-full h-full overflow-hidden -z-20 pointer-events-none opacity-40">
+           <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-primary/20 rounded-full blur-[150px] animate-pulse-glow" />
+           <div className="absolute bottom-[0%] right-[-10%] w-[40%] h-[40%] bg-secondary/20 rounded-full blur-[150px] animate-pulse-glow delay-1000" />
+           <div className="absolute top-[30%] right-[10%] w-[30%] h-[30%] bg-accent/10 rounded-full blur-[150px] animate-pulse-glow delay-2000" />
         </div>
-      </div>
 
-      {/* Quick Filters / Chips - Meeso/Flipkart Style */}
-      <div className="bg-background border-b border-border/50 overflow-x-auto scrollbar-hide py-2">
-        <div className="container flex gap-3 min-w-max">
-          {[
-            { label: 'Fast Delivery', query: 'category=Electronics' },
-            { label: 'Top Rated', query: 'sortBy=rating' },
-            { label: 'Under ₹499', query: 'maxPrice=499' },
-            { label: 'New Arrivals', query: 'sortBy=newest' },
-            { label: 'Clearance Sale', query: 'maxPrice=1000&sortBy=price_asc' },
-            { label: 'Combo Offers', query: 'search=Combo' }
-          ].map((filter) => (
-            <Link 
-              key={filter.label} 
-              to={`/products?${filter.query}`}
-              className="px-4 py-1.5 rounded-full border border-border text-xs font-bold hover:bg-primary hover:text-white transition-all bg-card"
-            >
-              {filter.label}
-            </Link>
-          ))}
-        </div>
-      </div>
+        {/* Fullscreen Hero Section */}
+        <motion.section 
+          style={{ scale: heroScale, opacity: heroOpacity }}
+          className="relative min-h-[90vh] flex flex-col justify-center"
+        >
+          <div className="container">
+            <HeroCarousel />
+          </div>
+        </motion.section>
 
-      {/* Hero Banner Slider Section */}
-      <HeroCarousel />
-
-      {/* Deals of the Day */}
-      <section className="container py-12">
-        <div className="rounded-[2.5rem] bg-card p-6 md:p-10 border border-border/50 shadow-sm">
-          <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="h-12 w-12 flex items-center justify-center rounded-2xl bg-destructive/10 text-destructive">
-                <Timer className="h-7 w-7 animate-pulse" />
-              </div>
-              <div>
-                <h2 className="font-display text-2xl md:text-3xl font-bold">Deals of the Day</h2>
-                <div className="flex gap-2 mt-1">
-                  <span className="text-xs font-bold text-destructive uppercase tracking-widest flex items-center gap-2">
-                    <span className="relative flex h-2 w-2">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-destructive opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-destructive"></span>
-                    </span>
-                    Ending in: {timeLeft}
-                  </span>
-                </div>
-              </div>
+        {/* Scroll Indicator */}
+        <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 2 }}
+            className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 pointer-events-none"
+        >
+            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-white/40">Scroll to Explore</span>
+            <div className="h-10 w-6 rounded-full border border-white/20 p-1">
+                <motion.div 
+                    animate={{ y: [0, 15, 0] }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                    className="h-2 w-full bg-primary rounded-full" 
+                />
             </div>
-            <Link to="/products" className="text-primary font-bold hover:underline group flex items-center gap-1">
-              View All <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-            </Link>
-          </div>
-          <ProductCarousel products={dealsOfTheDay.length > 0 ? dealsOfTheDay : trendingProducts} variant="default" showNavigation />
-        </div>
-      </section>
+        </motion.div>
 
-      {/* Featured Collection */}
-      <section className="container py-12">
-        <div className="mb-10 flex items-end justify-between">
-          <div>
-            <span className="text-xs font-bold uppercase tracking-widest text-primary mb-2 block">Premium Finds</span>
-            <h2 className="font-display text-3xl md:text-4xl font-bold">Season's Top Picks</h2>
-          </div>
-          <Link to="/products" className="group flex items-center gap-2 font-bold text-primary transition-all hover:gap-3 hidden md:flex">
-            Explore All
-            <ArrowRight className="h-5 w-5" />
-          </Link>
-        </div>
-        <ProductCarousel
-          products={featuredProducts}
-          variant="featured"
-          showNavigation
-        />
-      </section>
-
-      {/* Trust Bar */}
-      <section className="border-y border-border/50 bg-secondary/20 py-10">
-        <div className="container">
-          <div className="grid grid-cols-2 gap-6 md:grid-cols-4">
-            {[
-              { icon: Truck, title: 'Free Delivery', desc: 'On orders above ₹999' },
-              { icon: Shield, title: 'Secure Payment', desc: '100% safe gateway' },
-              { icon: RefreshCw, title: 'Easy Returns', desc: '7 days return policy' },
-              { icon: ShoppingBag, title: 'Original Products', desc: 'Direct from brands' },
-            ].map((stat, i) => (
-              <div key={i} className="flex flex-col items-center text-center gap-2">
-                <div className="rounded-2xl bg-background p-3 shadow-sm border border-border/50">
-                  <stat.icon className="h-6 w-6 text-primary" />
-                </div>
-                <h3 className="font-bold text-sm">{stat.title}</h3>
-                <p className="text-[10px] md:text-xs text-muted-foreground">{stat.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Bestsellers Grid */}
-      <section className="container py-16">
-        <div className="mb-12 text-center">
-          <span className="text-xs font-bold text-primary uppercase tracking-[0.2em]">Our Favorites</span>
-          <h2 className="mt-3 font-display text-4xl md:text-5xl font-bold">Trending Bestsellers</h2>
-          <div className="mx-auto mt-4 h-1 w-20 rounded-full bg-primary/30" />
-        </div>
-        <div className="grid grid-cols-2 gap-4 md:gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-          {bestsellers.slice(0, 10).map((product) => (
-            <ProductCard key={product.id} product={product} />
-          ))}
-        </div>
-        <div className="mt-12 text-center">
-          <Link 
-            to="/products"
-            className="inline-flex h-14 items-center justify-center rounded-2xl border-2 border-primary/20 px-12 text-lg font-bold text-primary transition-all hover:bg-primary hover:text-white"
-          >
-            View All Products
-          </Link>
-        </div>
-      </section>
-
-      {/* Recommendations & Recently Viewed */}
-      {(recommendations.length > 0 || recentlyViewed.length > 0) && (
-        <section className="bg-secondary/10 py-16">
-          <div className="container space-y-16">
-            {recommendations.length > 0 && (
-              <div>
-                <div className="mb-8 flex items-center gap-2">
-                  <div className="h-8 w-1 rounded-full bg-primary" />
-                  <h2 className="font-display text-2xl font-bold">Just For You</h2>
-                </div>
-                <ProductCarousel products={recommendations} variant="compact" showNavigation />
-              </div>
-            )}
-            
-            {recentlyViewed.length > 0 && (
-              <div>
-                <div className="mb-8 flex items-center gap-2">
-                  <div className="h-8 w-1 rounded-full bg-primary" />
-                  <h2 className="font-display text-2xl font-bold">Recently Viewed</h2>
-                </div>
-                <ProductCarousel products={recentlyViewed} variant="compact" showNavigation />
-              </div>
-            )}
-          </div>
-        </section>
-      )}
-
-      {/* App Download / Newsletter Mockup */}
-      <section className="container py-24">
-        <div className="relative overflow-hidden rounded-[3rem] bg-primary p-12 text-center text-primary-foreground md:p-20 shadow-2xl">
-          <div className="relative z-10 mx-auto max-w-3xl">
-            <h2 className="font-display text-4xl font-bold md:text-6xl">
-              Shop on the Go!
-            </h2>
-            <p className="mt-6 text-xl opacity-90">
-              Download the Luxe app for exclusive app-only deals <br className="hidden md:block" /> and faster checkouts.
-            </p>
-            <div className="mt-10 flex flex-wrap justify-center gap-4">
-              <button className="flex items-center gap-3 rounded-2xl bg-white px-8 py-4 text-black transition-transform hover:scale-105">
-                <span className="text-left">
-                  <p className="text-[10px] font-bold uppercase opacity-60">Get it on</p>
-                  <p className="text-lg font-bold">Google Play</p>
-                </span>
-              </button>
-              <button className="flex items-center gap-3 rounded-2xl bg-white px-8 py-4 text-black transition-transform hover:scale-105">
-                <span className="text-left">
-                  <p className="text-[10px] font-bold uppercase opacity-60">Download on</p>
-                  <p className="text-lg font-bold">App Store</p>
-                </span>
-              </button>
-            </div>
-          </div>
+        {/* Content Container */}
+        <div className="relative z-10 container space-y-32 pb-32 pt-20">
           
-          {/* Decorative Background Elements */}
-          <div className="absolute -left-20 -top-20 h-64 w-64 rounded-full bg-white/10 blur-3xl" />
-          <div className="absolute -right-20 -bottom-20 h-64 w-64 rounded-full bg-white/10 blur-3xl" />
+          {/* Quick Stats / Trust Bar */}
+          <section className="grid grid-cols-2 md:grid-cols-4 gap-8">
+            {[
+              { icon: Zap, label: "Fastest Shipping", sub: "Under 24h delivery" },
+              { icon: ShieldCheck, label: "Secure Payment", sub: "AES-256 encryption" },
+              { icon: Globe, label: "Global Source", sub: "Verified world brands" },
+              { icon: Heart, label: "Premium Care", sub: "24/7 dedicated support" },
+            ].map((item, i) => (
+              <motion.div 
+                key={i}
+                whileHover={{ scale: 1.05, y: -5 }}
+                className="glass p-8 rounded-[2rem] flex flex-col items-center text-center gap-4 group"
+              >
+                <div className="h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center text-primary transition-all duration-300 group-hover:bg-primary group-hover:text-white shadow-glow">
+                  <item.icon className="h-6 w-6" />
+                </div>
+                <div>
+                  <h3 className="font-black text-sm tracking-tight">{item.label}</h3>
+                  <p className="text-[10px] uppercase font-bold text-white/40 tracking-widest mt-1">{item.sub}</p>
+                </div>
+              </motion.div>
+            ))}
+          </section>
+
+          {/* Futuristic Categories */}
+          <section className="space-y-12">
+            <div className="flex flex-col items-center text-center space-y-4">
+               <motion.span 
+                initial={{ opacity: 0 }}
+                whileInView={{ opacity: 1 }}
+                className="badge-premium"
+               >
+                 World Class Selection
+               </motion.span>
+               <h2 className="text-4xl md:text-6xl font-black tracking-tighter">Explore <span className="gradient-text italic">Universes</span></h2>
+            </div>
+            
+            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-4 overflow-x-auto pb-4 scrollbar-hide">
+              {categories.map((cat, i) => (
+                <motion.div
+                  key={cat.name}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.1 }}
+                >
+                  <Link 
+                    to={`/products?category=${cat.name}`}
+                    className="group flex flex-col items-center gap-4 p-8 rounded-[2.5rem] glass border-white/[0.05] hover:border-primary/50 transition-all hover:bg-white/[0.08]"
+                  >
+                    <div className={cn("text-3xl transition-transform duration-500 group-hover:scale-125 group-hover:rotate-12")}>
+                      {cat.icon}
+                    </div>
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em]">{cat.name}</span>
+                  </Link>
+                </motion.div>
+              ))}
+            </div>
+          </section>
+
+          {/* High Impact Flash Deals */}
+          {dealsOfTheDay.length > 0 && (
+            <motion.section 
+              initial={{ opacity: 0, scale: 0.95 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              className="relative overflow-hidden rounded-[4rem]"
+            >
+               <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-secondary/10 to-accent/10 opacity-50" />
+               <div className="glass p-10 md:p-20 relative z-10">
+                  <div className="flex flex-col md:flex-row items-center justify-between gap-10 mb-16">
+                    <div className="space-y-4 text-center md:text-left">
+                       <div className="inline-flex items-center gap-2 bg-destructive/10 text-destructive px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border border-destructive/20 scale-110">
+                          <Timer className="h-3 w-3 animate-pulse" />
+                          Limited Drop
+                       </div>
+                       <h2 className="text-5xl md:text-7xl font-black tracking-tighter shadow-sm text-balance leading-none">
+                          FLASH <br /> <span className="text-destructive font-black text-glow">DEALS</span>
+                       </h2>
+                       <p className="text-white/50 text-base md:text-lg max-w-sm">
+                          Handpicked selection of premium gear at liquidator prices. 
+                          <span className="block mt-2 font-bold text-white">Expires in: {timeLeft}</span>
+                       </p>
+                    </div>
+                    <Link to="/products" className="btn-primary group">
+                      Hunt All Deals 
+                      <ArrowRight className="ml-2 h-5 w-5 inline-block transition-transform group-hover:translate-x-2" />
+                    </Link>
+                  </div>
+                  <ProductCarousel products={dealsOfTheDay} variant="default" showNavigation />
+               </div>
+            </motion.section>
+          )}
+
+          {/* Curated Collections with Cinematic Hover */}
+          <section className="space-y-16">
+            <div className="flex items-end justify-between px-4">
+              <div className="space-y-4">
+                <span className="badge-premium border-primary/20 text-primary">Prestige selection</span>
+                <h2 className="text-4xl md:text-6xl font-black tracking-tighter">Curated <span className="gradient-text">Masterpieces</span></h2>
+              </div>
+              <Link to="/products" className="hidden md:flex items-center gap-2 text-xs font-black uppercase tracking-widest text-primary/70 hover:text-primary transition-colors">
+                View Gallery <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+            <ProductCarousel
+              products={featuredProducts}
+              variant="featured"
+              showNavigation
+            />
+          </section>
+
+          {/* Bestsellers Grid / Trending Items */}
+          <section className="space-y-16">
+             <div className="flex flex-col items-center text-center space-y-4">
+                <span className="badge-premium">Live Inventory Status</span>
+                <h2 className="text-4xl md:text-6xl font-black tracking-tighter">Most <span className="text-glow italic">Wanted</span> Right Now</h2>
+             </div>
+             <div className="grid grid-cols-2 gap-6 md:gap-10 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+                {bestsellers.slice(0, 10).map((product, i) => (
+                  <motion.div
+                    key={product.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    transition={{ delay: (i % 5) * 0.1 }}
+                  >
+                    <ProductCard product={product} />
+                  </motion.div>
+                ))}
+             </div>
+             <div className="text-center">
+                <Link to="/products" className="btn-primary px-16 h-18 text-lg font-black tracking-widest">
+                  Browse Full Arsenal
+                </Link>
+             </div>
+          </section>
+
+          {/* Brand Promise Section - High Fidelity */}
+          <section className="grid md:grid-cols-2 gap-8 items-center overflow-hidden">
+             <motion.div 
+               initial={{ x: -100, opacity: 0 }}
+               whileInView={{ x: 0, opacity: 1 }}
+               className="space-y-10 order-2 md:order-1"
+             >
+                <h2 className="text-5xl md:text-7xl font-black tracking-tighter leading-none">
+                   THE <br className="hidden md:block" /> <span className="gradient-text italic">SHOPSPHERE</span> <br /> DIFFERENCE.
+                </h2>
+                <div className="space-y-8">
+                   <PromiseItem 
+                      title="AI-Curated Selection" 
+                      desc="Our neural network scans 500+ global brands daily to source only the highest-rated premium gear." 
+                   />
+                   <PromiseItem 
+                      title="Verification Guaranteed" 
+                      desc="Every item undergoes a 12-point authentication process before entering our master inventory." 
+                   />
+                </div>
+                <button className="btn-secondary group">
+                   Learn Our Process
+                   <Globe className="ml-3 h-5 w-5 inline transition-transform group-hover:rotate-180 duration-1000" />
+                </button>
+             </motion.div>
+             <motion.div 
+               initial={{ scale: 0.8, opacity: 0 }}
+               whileInView={{ scale: 1, opacity: 1 }}
+               className="relative order-1 md:order-2"
+             >
+                <div className="aspect-square glass rounded-[4rem] animate-float flex items-center justify-center p-20 shadow-glow overflow-hidden">
+                    <Sparkles className="h-full w-full text-primary/20 absolute -z-10 animate-pulse-glow" />
+                    <ShoppingBag className="h-full w-full text-white drop-shadow-2xl" />
+                </div>
+                {/* Decorative Elements */}
+                <div className="absolute -top-10 -right-10 h-32 w-32 bg-primary/20 blur-3xl animate-pulse" />
+                <div className="absolute -bottom-10 -left-10 h-32 w-32 bg-secondary/20 blur-3xl animate-pulse delay-1000" />
+             </motion.div>
+          </section>
+
         </div>
-      </section>
+      </div>
     </Layout>
   );
+}
+
+function PromiseItem({ title, desc }: { title: string, desc: string }) {
+   return (
+      <div className="group space-y-2">
+         <h4 className="text-xl font-black flex items-center gap-3">
+            <span className="h-1 w-8 bg-primary rounded-full group-hover:w-12 transition-all" />
+            {title}
+         </h4>
+         <p className="text-white/40 text-sm font-medium leading-relaxed ml-11 max-w-sm group-hover:text-white/60 transition-colors">
+            {desc}
+         </p>
+      </div>
+   );
 }

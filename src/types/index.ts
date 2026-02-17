@@ -1,3 +1,11 @@
+export interface ProductMedia {
+  id: string;
+  productId: string;
+  type: 'image' | 'video';
+  url: string;
+  isPrimary: boolean;
+}
+
 // Product Types
 export interface Product {
   id: string;
@@ -7,8 +15,10 @@ export interface Product {
   originalPrice?: number;
   category: string;
   subcategory?: string;
-  images: string[];
-  videoUrl?: string;
+  images: string[]; // Keep for compatibility, will be populated from media
+  videoUrl?: string; // Keep for compatibility, will be populated from media
+  video_url?: string; // Add snake_case for direct mapping
+  media?: ProductMedia[]; // New structured media
   rating: number;
   reviewCount: number;
   stock: number;
@@ -20,6 +30,10 @@ export interface Product {
   colors?: string[];
   dealOfTheDay?: boolean;
   dealExpiresAt?: string;
+  attributes?: {
+    features?: { key: string; value: string }[];
+    links?: { label: string; url: string }[];
+  };
 }
 
 export interface Review {
@@ -85,6 +99,7 @@ export interface Order {
   shipping: number;
   tax: number;
   total: number;
+  handlingFee?: number;
   status: OrderStatus;
   createdAt: string;
   estimatedDelivery: string;

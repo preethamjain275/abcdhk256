@@ -9,7 +9,7 @@ SET
   -- Format: https://picsum.photos/seed/{ID}_{1,2,3}/800/800
   images = ARRAY[
     'https://picsum.photos/seed/' || id || '_1/800/800',
-    'https://picsum.photos/seed/' || id || '_2/800/800',
+       'https://picsum.photos/seed/' || id || '_2/800/800',
     'https://picsum.photos/seed/' || id || '_3/800/800'
   ],
   

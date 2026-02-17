@@ -15,6 +15,8 @@ export default function Settings() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [fullName, setFullName] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [address, setAddress] = useState('');
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -23,6 +25,8 @@ export default function Settings() {
         if (data) {
           setProfile(data);
           setFullName(data.full_name || '');
+          setPhoneNumber((data as any).phone || '');
+          setAddress((data as any).address || '');
         }
       }
       setLoading(false);
@@ -38,7 +42,9 @@ export default function Settings() {
     setSaving(true);
     const { error } = await profileService.updateProfile(user.id, {
       full_name: fullName,
-    });
+      phone: phoneNumber,
+      address: address
+    } as any);
 
     if (error) {
       toast.error('Failed to update profile');
@@ -133,6 +139,26 @@ export default function Settings() {
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   placeholder="Your full name"
+                  className="w-full rounded-xl border border-border bg-background px-4 py-2.5 outline-none transition-colors focus:border-primary"
+                />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-sm font-medium">Phone Number</label>
+                <input
+                  type="tel"
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(e.target.value)}
+                  placeholder="+91 9876543210"
+                  className="w-full rounded-xl border border-border bg-background px-4 py-2.5 outline-none transition-colors focus:border-primary"
+                />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-sm font-medium">Default Address</label>
+                <textarea
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  placeholder="Full address details..."
+                  rows={3}
                   className="w-full rounded-xl border border-border bg-background px-4 py-2.5 outline-none transition-colors focus:border-primary"
                 />
               </div>

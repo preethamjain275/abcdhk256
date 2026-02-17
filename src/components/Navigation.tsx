@@ -1,11 +1,13 @@
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useCart } from "@/contexts/CartContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useNotifications } from "@/contexts/NotificationContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { Home, ShoppingBag, ShoppingCart, User, Bell, Sun, Moon, Search, Menu, X, LogIn } from "lucide-react";
+import { Home, ShoppingBag, ShoppingCart, User, Bell, Sun, Moon, Search, Menu, X, LogIn, Gift, Settings, Sparkles, Zap, Shield } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 
 export function Navigation() {
   const location = useLocation();
@@ -14,182 +16,211 @@ export function Navigation() {
   const { resolvedTheme, toggleTheme } = useTheme();
   const { unreadCount } = useNotifications();
   const { user } = useAuth();
+  const [isAdmin, setIsAdmin] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+
+  useEffect(() => {
+    const checkAdmin = async () => {
+      if (user) {
+        try {
+          const { data, error } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', user.id)
+            .single();
+          
+          if (!error && data) {
+            // Check for admin role (case-insensitive)
+            const role = (data as any).role?.toUpperCase();
+            setIsAdmin(role === 'ADMIN');
+          } else {
+            setIsAdmin(false);
+          }
+        } catch (err) {
+          console.error('Error checking admin status:', err);
+          setIsAdmin(false);
+        }
+      } else {
+        setIsAdmin(false)
+      }
+    };
+    checkAdmin();
+  }, [user]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
       navigate(`/products?search=${encodeURIComponent(searchQuery.trim())}`);
       setSearchQuery("");
+      setIsSearchFocused(false);
     }
   };
 
   const navLinks = [
     { path: "/", icon: Home, label: "Home" },
     { path: "/products", icon: ShoppingBag, label: "Explore" },
-    { path: "/cart", icon: ShoppingCart, label: "Cart", badge: cartCount },
+    { path: "/gift-finder", icon: Gift, label: "Gifts", highlight: true },
     { path: "/profile", icon: User, label: "Account" },
   ];
 
   return (
     <>
-      {/* Desktop Navigation */}
-      <header className="fixed left-0 right-0 top-0 z-50 hidden border-b border-border bg-background/95 backdrop-blur-md md:block">
-        <div className="container flex h-16 items-center gap-8">
+      <header className="fixed left-0 right-0 top-6 z-50 container px-4 hidden md:block">
+        <motion.div 
+          initial={{ y: -100 }}
+          animate={{ y: 0 }}
+          className="flex h-20 items-center justify-between px-8 rounded-3xl glass-dark border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.5)]"
+        >
           {/* Logo */}
-          <Link to="/" className="group flex items-center gap-2">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary shadow-glow transition-transform group-hover:scale-110">
-              <span className="font-display text-xl font-bold text-primary-foreground">L</span>
+          <Link to="/" className="group flex items-center gap-4">
+            <div className="relative flex h-12 w-12 items-center justify-center rounded-2xl bg-primary shadow-glow transition-all duration-500 group-hover:rotate-[360deg] group-hover:scale-110">
+              <Sparkles className="h-6 w-6 text-white" />
+              <div className="absolute inset-0 bg-primary/20 blur-xl animate-pulse" />
             </div>
-            <span className="font-display text-2xl font-black tracking-tighter">LUXE</span>
+            <div className="flex flex-col">
+              <span className="font-display text-2xl font-black tracking-tighter leading-none dark:text-white">SHOP</span>
+              <span className="text-[10px] font-black tracking-[0.4em] text-primary">SPHERE</span>
+            </div>
           </Link>
 
-          {/* Search Bar - Amazon/Flipkart Style */}
-          <form onSubmit={handleSearch} className="flex-1 max-w-xl relative">
-            <div className="relative group">
+          {/* Search Bar - Expandable */}
+          <form onSubmit={handleSearch} className="flex-1 max-w-md mx-8">
+            <motion.div 
+               animate={{ width: isSearchFocused ? "100%" : "80%" }}
+               className="relative group ml-auto"
+            >
               <input 
                 type="text" 
-                placeholder="Search for products, brands and more"
+                placeholder="Search premium arsenal..."
                 value={searchQuery}
+                onFocus={() => setIsSearchFocused(true)}
+                onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full h-11 pl-4 pr-12 rounded-lg border border-border bg-secondary/30 focus:bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
+                className="w-full h-12 pl-12 pr-4 rounded-2xl border border-white/5 bg-white/5 focus:bg-white/10 focus:border-primary/50 outline-none transition-all duration-500 text-sm font-bold"
               />
-              <button type="submit" className="absolute right-0 top-0 h-full w-12 flex items-center justify-center text-muted-foreground hover:text-primary transition-colors">
-                <Search className="h-5 w-5" />
-              </button>
-            </div>
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40 group-focus-within:text-primary transition-colors" />
+            </motion.div>
           </form>
 
-          {/* Right Actions */}
-          <div className="flex items-center gap-6">
+          {/* Links & Actions */}
+          <div className="flex items-center gap-8">
             <nav className="flex items-center gap-6">
               {navLinks.map((link) => (
                 <Link
                   key={link.path}
                   to={link.path}
                   className={cn(
-                    "relative flex flex-col items-center gap-0.5 text-xs font-bold transition-all hover:text-primary",
-                    location.pathname === link.path ? "text-primary" : "text-muted-foreground",
+                    "relative text-[11px] font-black uppercase tracking-widest transition-all hover:text-primary group flex flex-col items-center gap-1",
+                    location.pathname === link.path ? "text-primary" : "text-white/60",
+                    (link as any).highlight && "text-amber-400"
                   )}
                 >
-                  <link.icon className="h-5 w-5" />
+                  <link.icon className={cn("h-4 w-4 transition-transform group-hover:-translate-y-1", (link as any).highlight && "animate-pulse")} />
                   {link.label}
-                  {link.badge !== undefined && link.badge > 0 && (
-                    <span className="absolute -right-2 -top-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-primary px-1 text-[10px] text-primary-foreground">
-                      {link.badge}
-                    </span>
+                  {location.pathname === link.path && (
+                    <motion.div layoutId="nav-pill" className="absolute -bottom-2 h-1 w-4 bg-primary rounded-full" />
                   )}
                 </Link>
               ))}
             </nav>
 
-            <div className="h-6 w-px bg-border/50" />
-
-            <div className="flex items-center gap-2">
-              <button
+            <div className="flex items-center gap-4">
+              <button 
                 onClick={toggleTheme}
-                className="rounded-xl p-2.5 text-muted-foreground transition-all hover:bg-secondary hover:text-primary active:scale-90"
+                className="p-3 glass rounded-2xl hover:border-primary/50 transition-all hover:scale-110 active:scale-95"
               >
-                {resolvedTheme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+                {resolvedTheme === 'dark' ? (
+                  <Sun className="h-5 w-5 text-amber-400" />
+                ) : (
+                  <Moon className="h-5 w-5 text-slate-700" />
+                )}
               </button>
 
-              <Link
-                to="/notifications"
-                className="relative rounded-xl p-2.5 text-muted-foreground transition-all hover:bg-secondary hover:text-primary"
-              >
-                <Bell className="h-5 w-5" />
-                {unreadCount > 0 && (
-                  <span className="absolute right-1.5 top-1.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-white shadow-sm">
-                    {unreadCount}
+              <Link to="/cart" className="relative group p-3 glass rounded-2xl hover:border-primary/50 transition-colors">
+                <ShoppingCart className="h-5 w-5 dark:text-white text-slate-700 group-hover:text-primary" />
+                {cartCount > 0 && (
+                  <span className="absolute -right-1 -top-1 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-primary px-1 text-[10px] font-black text-white shadow-glow">
+                    {cartCount}
                   </span>
                 )}
               </Link>
-            </div>
 
-            {!user && (
-              <Link
-                to="/auth"
-                className="flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground shadow-glow transition-all hover:scale-105 active:scale-95"
-              >
-                Login
-              </Link>
-            )}
+              {isAdmin && (
+                <Link 
+                  to="/admin" 
+                  className="p-3 glass rounded-2xl hover:border-primary/50 transition-all hover:scale-110 active:scale-95 group"
+                  title="Admin Dashboard"
+                >
+                  <Shield className="h-5 w-5 text-amber-500 group-hover:animate-pulse" />
+                </Link>
+              )}
+              
+              {!user ? (
+                <Link to="/auth" className="btn-primary py-3 scale-90 px-6">
+                  Sign In
+                </Link>
+              ) : (
+                <Link to="/profile" className="h-11 w-11 rounded-2xl border-2 border-primary/20 overflow-hidden hover:border-primary transition-colors">
+                    <img src={user.user_metadata?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`} className="w-full h-full object-cover" />
+                </Link>
+              )}
+            </div>
           </div>
-        </div>
+        </motion.div>
       </header>
 
-      {/* Mobile Navigation */}
-      <header className="fixed left-0 right-0 top-0 z-50 border-b border-border bg-background/80 backdrop-blur-lg md:hidden">
-        <div className="flex h-14 items-center justify-between px-4">
+      {/* Mobile Header */}
+      <header className="fixed left-0 right-0 top-0 z-50 h-20 glass border-b border-white/5 md:hidden px-6 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-              <span className="font-display text-base font-bold text-primary-foreground">L</span>
+            <div className="h-10 w-10 flex items-center justify-center rounded-xl bg-primary">
+              <Sparkles className="h-5 w-5 text-white" />
             </div>
-            <span className="font-display text-lg font-semibold">Luxe</span>
+            <span className="font-display text-xl font-black italic tracking-tighter">SPHERE</span>
           </Link>
 
-          <div className="flex items-center gap-2">
-            <button onClick={toggleTheme} className="rounded-lg p-2 text-muted-foreground">
-              {resolvedTheme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-            </button>
-
-            <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="rounded-lg p-2 text-muted-foreground">
-              {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-            </button>
+          <div className="flex items-center gap-4">
+             <Link to="/cart" className="relative">
+                <ShoppingCart className="h-6 w-6" />
+                {cartCount > 0 && <span className="absolute -right-2 -top-2 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[8px] font-black">{cartCount}</span>}
+             </Link>
+             <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+                {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+             </button>
           </div>
-        </div>
 
-        {/* Mobile Menu */}
-        {mobileMenuOpen && (
-          <nav className="border-t border-border bg-background p-4">
-            {navLinks.map((link) => (
-              <Link
-                key={link.path}
-                to={link.path}
-                onClick={() => setMobileMenuOpen(false)}
-                className={cn(
-                  "flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition-colors",
-                  location.pathname === link.path
-                    ? "bg-primary/10 text-primary"
-                    : "text-muted-foreground hover:bg-secondary hover:text-foreground",
-                )}
+          <AnimatePresence>
+            {mobileMenuOpen && (
+              <motion.div 
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                className="absolute top-20 left-0 right-0 glass-dark border-t border-white/5 p-8 space-y-4"
               >
-                <link.icon className="h-5 w-5" />
-                {link.label}
-                {link.badge && link.badge > 0 && (
-                  <span className="ml-auto flex h-5 min-w-[20px] items-center justify-center rounded-full bg-primary px-1.5 text-xs font-semibold text-primary-foreground">
-                    {link.badge}
-                  </span>
-                )}
-              </Link>
-            ))}
-          </nav>
-        )}
+                 {navLinks.map(link => (
+                    <Link 
+                      key={link.path} 
+                      to={link.path} 
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center gap-4 text-lg font-black uppercase tracking-widest text-white/70 hover:text-primary"
+                    >
+                       <link.icon className="h-6 w-6" />
+                       {link.label}
+                    </Link>
+                 ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
       </header>
 
-      {/* Mobile Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-background/95 backdrop-blur-lg md:hidden">
-        <div className="flex items-center justify-around py-2">
-          {navLinks.map((link) => (
-            <Link
-              key={link.path}
-              to={link.path}
-              className={cn(
-                "relative flex flex-col items-center gap-1 px-4 py-2",
-                location.pathname === link.path ? "text-primary" : "text-muted-foreground",
-              )}
-            >
-              <link.icon className="h-5 w-5" />
-              <span className="text-[10px] font-medium">{link.label}</span>
-              {link.badge && link.badge > 0 && (
-                <span className="absolute right-2 top-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground">
-                  {link.badge}
-                </span>
-              )}
-            </Link>
+      {/* Mobile Bottom Nav */}
+      <nav className="fixed bottom-6 left-6 right-6 z-50 h-16 glass-dark rounded-full border border-white/10 md:hidden px-8 flex items-center justify-around">
+          {navLinks.slice(0, 4).map(link => (
+             <Link key={link.path} to={link.path} className={cn("transition-colors", location.pathname === link.path ? "text-primary scale-110" : "text-white/40")}>
+                <link.icon className="h-6 w-6" />
+             </Link>
           ))}
-        </div>
       </nav>
     </>
   );

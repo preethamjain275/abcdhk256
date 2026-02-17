@@ -1,6 +1,5 @@
 
 import * as React from "react"
-import { Card, CardContent } from "@/components/ui/card"
 import {
   Carousel,
   CarouselContent,
@@ -8,103 +7,170 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel"
-import { Button } from "@/components/ui/button"
 import { Link } from "react-router-dom"
 import Autoplay from "embla-carousel-autoplay"
+import { motion, AnimatePresence } from "framer-motion"
+import { Sparkles, ArrowRight } from "lucide-react"
 
 const heroSlides = [
   {
     id: 1,
-    title: "MACBOOK AIR M2",
-    subtitle: "Grand Electronics Days",
-    description: "Starting from ₹84,990*",
-    cta: "Buy Now",
+    title: "MACBOOK \n AIR M3",
+    subtitle: "New Release 2024",
+    description: "Experience the ultimate power. Starting from ₹1,14,900*",
+    cta: "Order Now",
     link: "/products?search=Macbook",
     image: "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&q=80&w=800",
-    gradient: "from-blue-600 to-indigo-800",
-    highlightColor: "text-yellow-400"
+    color: "from-blue-500/20",
+    accent: "text-blue-400"
   },
   {
     id: 2,
-    title: "PREMIUM FASHION",
-    subtitle: "New Season Arrivals",
-    description: "Up to 50% Off on Top Brands",
-    cta: "Explore",
+    title: "LUXURY \n TIMEPIECES",
+    subtitle: "Limited Edition",
+    description: "Timeless elegance for the modern connoisseur.",
+    cta: "Explore Collection",
     link: "/products?category=Fashion",
-    image: "https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&q=80&w=800",
-    gradient: "from-purple-600 to-pink-600",
-    highlightColor: "text-white"
+    image: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&q=80&w=800",
+    color: "from-amber-500/20",
+    accent: "text-amber-400"
   },
   {
     id: 3,
-    title: "MODERN HOME",
-    subtitle: "Elevate Your Living",
-    description: "Decor & Furniture starting ₹499",
-    cta: "Shop Home",
-    link: "/products?category=Home",
-    image: "https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&q=80&w=800",
-    gradient: "from-orange-500 to-red-600",
-    highlightColor: "text-yellow-200"
+    title: "STUDIO \n SOUND",
+    subtitle: "Precision Audio",
+    description: "Immerse yourself in pure, unadulterated sound.",
+    cta: "Shop Audio",
+    link: "/products?category=Electronics",
+    image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&q=80&w=800",
+    color: "from-purple-500/20",
+    accent: "text-purple-400"
   }
 ]
 
 export function HeroCarousel() {
-  const plugin = React.useRef(
-    Autoplay({ delay: 5000, stopOnInteraction: true })
-  )
+  const [api, setApi] = React.useState<any>()
+  const [current, setCurrent] = React.useState(0)
+
+  React.useEffect(() => {
+    if (!api) return
+    api.on("select", () => {
+      setCurrent(api.selectedScrollSnap())
+    })
+  }, [api])
 
   return (
-    <section className="container py-6">
-      <Carousel
-        plugins={[plugin.current]}
-        className="w-full relative group"
-        onMouseEnter={plugin.current.stop}
-        onMouseLeave={plugin.current.reset}
-      >
-        <CarouselContent>
-          {heroSlides.map((slide) => (
-            <CarouselItem key={slide.id}>
-              <div className={`relative overflow-hidden rounded-[2rem] bg-gradient-to-r ${slide.gradient} shadow-2xl aspect-[21/9] md:aspect-[25/8]`}>
-                <div className="absolute inset-0 flex items-center px-8 md:px-24">
-                  <div className="max-w-xl text-white z-10">
-                    <span className="inline-block bg-white/20 backdrop-blur-md px-4 py-1 rounded-full text-[10px] md:text-xs font-black uppercase tracking-widest mb-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <Carousel
+      setApi={setApi}
+      plugins={[Autoplay({ delay: 8000 })]}
+      className="w-full relative h-[70vh] md:h-[80vh] overflow-hidden rounded-[3rem]"
+    >
+      <CarouselContent className="h-full">
+        {heroSlides.map((slide, index) => (
+          <CarouselItem key={slide.id} className="relative h-full">
+            <div className={`relative w-full h-full bg-slate-950 flex items-center overflow-hidden`}>
+              {/* Animated Background Mesh */}
+              <div className={`absolute inset-0 bg-gradient-to-br ${slide.color} to-transparent opacity-50`} />
+              <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay" />
+              
+              <div className="container relative z-10 grid lg:grid-cols-2 gap-12 items-center">
+                <div className="space-y-8">
+                  <motion.div
+                    initial={{ opacity: 0, x: -50 }}
+                    animate={current === index ? { opacity: 1, x: 0 } : {}}
+                    transition={{ duration: 0.8, delay: 0.2 }}
+                    className="flex items-center gap-3"
+                  >
+                    <span className="h-[1px] w-12 bg-primary" />
+                    <span className="text-primary font-black uppercase tracking-[0.4em] text-xs md:text-sm">
                       {slide.subtitle}
                     </span>
-                    <h1 className="font-display text-3xl md:text-6xl font-black leading-tight tracking-tighter mb-2">
-                      {slide.title.split(' ').map((word, i) => (
-                         <span key={i} className={i === 1 || i === 2 ? slide.highlightColor : ""}>{word} </span>
-                      ))}
-                    </h1>
-                    <p className="mt-2 md:mt-4 text-sm md:text-xl font-medium opacity-90 max-w-sm md:max-w-none">
-                      {slide.description}
-                    </p>
-                    <div className="mt-6 md:mt-8">
-                        <Link to={slide.link}>
-                            <Button className="bg-white text-black hover:bg-white/90 font-black px-8 py-6 rounded-xl shadow-xl transition-all hover:scale-105">
-                                {slide.cta}
-                            </Button>
-                        </Link>
-                    </div>
-                  </div>
-                  <div className="hidden md:block absolute right-4 lg:right-24 top-1/2 -translate-y-1/2 w-1/3 lg:w-1/3 animate-in zoom-in-95 duration-1000 delay-300">
-                    <img 
-                      src={slide.image} 
-                      alt={slide.title} 
-                      className="w-full h-auto object-contain drop-shadow-[0_20px_50px_rgba(0,0,0,0.5)] transform rotate-[-5deg] hover:rotate-0 transition-transform duration-500"
-                    />
-                  </div>
+                  </motion.div>
+
+                  <motion.h1
+                    initial={{ opacity: 0, y: 50 }}
+                    animate={current === index ? { opacity: 1, y: 0 } : {}}
+                    transition={{ duration: 0.8, delay: 0.4 }}
+                    className="text-5xl md:text-8xl font-black text-white tracking-tighter leading-[0.85] whitespace-pre-line"
+                  >
+                    {slide.title}
+                  </motion.h1>
+
+                  <motion.p
+                    initial={{ opacity: 0 }}
+                    animate={current === index ? { opacity: 1 } : {}}
+                    transition={{ duration: 0.8, delay: 0.6 }}
+                    className="text-sm md:text-xl text-white/50 font-medium max-w-md leading-relaxed"
+                  >
+                    {slide.description}
+                  </motion.p>
+
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={current === index ? { opacity: 1, y: 0 } : {}}
+                    transition={{ duration: 0.8, delay: 0.8 }}
+                    className="pt-4"
+                  >
+                    <Link
+                      to={slide.link}
+                      className="btn-primary inline-flex items-center gap-3 px-10 py-5 group"
+                    >
+                      {slide.cta}
+                      <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-2" />
+                    </Link>
+                  </motion.div>
                 </div>
-                
-                {/* Decorative Elements */}
-                <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-white/10 blur-3xl" />
-                <div className="absolute -left-20 -bottom-20 h-64 w-64 rounded-full bg-white/10 blur-3xl" />
+
+                <div className="hidden lg:block relative">
+                   <motion.div
+                     initial={{ opacity: 0, scale: 0.8, rotate: -10 }}
+                     animate={current === index ? { opacity: 1, scale: 1, rotate: 0 } : {}}
+                     transition={{ duration: 1.2, type: "spring", bounce: 0.4 }}
+                     className="relative z-10"
+                   >
+                      <img 
+                        src={slide.image} 
+                        alt={slide.title} 
+                        className="w-full h-auto object-contain drop-shadow-[0_45px_100px_rgba(0,0,0,0.6)]"
+                      />
+                   </motion.div>
+                   
+                   {/* Decorative background element for image */}
+                   <motion.div 
+                     animate={{ 
+                       scale: [1, 1.2, 1],
+                       rotate: [0, 90, 0],
+                     }}
+                     transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+                     className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] -z-10"
+                   >
+                      <div className={`w-full h-full bg-gradient-to-r ${slide.color} to-transparent rounded-full blur-[120px] opacity-30`} />
+                   </motion.div>
+                </div>
               </div>
-            </CarouselItem>
-          ))}
-        </CarouselContent>
-        <CarouselPrevious className="left-4 opacity-0 group-hover:opacity-100 transition-opacity" />
-        <CarouselNext className="right-4 opacity-0 group-hover:opacity-100 transition-opacity" />
-      </Carousel>
-    </section>
+            </div>
+          </CarouselItem>
+        ))}
+      </CarouselContent>
+      
+      {/* Navigation Indicators */}
+      <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex gap-3 z-20">
+         {heroSlides.map((_, i) => (
+           <button 
+             key={i} 
+             onClick={() => api?.scrollTo(i)}
+             className={`h-1.5 transition-all duration-500 rounded-full ${current === i ? 'w-12 bg-primary shadow-glow' : 'w-2 bg-white/20 hover:bg-white/40'}`}
+           />
+         ))}
+      </div>
+
+      <div className="absolute top-1/2 -translate-y-1/2 left-8 md:flex hidden">
+         <CarouselPrevious className="relative translate-y-0 h-14 w-14 glass text-white border-white/5 hover:bg-primary" />
+      </div>
+      <div className="absolute top-1/2 -translate-y-1/2 right-8 md:flex hidden">
+         <CarouselNext className="relative translate-y-0 h-14 w-14 glass text-white border-white/5 hover:bg-primary" />
+      </div>
+
+    </Carousel>
   )
 }

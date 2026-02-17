@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Product } from '@/types';
 
 // Helper to map DB result to Transaction type
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const mapTransactionFromDB = (data: any): Transaction => ({
   id: data.id,
   orderId: data.order_id,

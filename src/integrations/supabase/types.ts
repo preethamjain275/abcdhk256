@@ -100,6 +100,7 @@ export type Database = {
           email: string | null
           full_name: string | null
           avatar_url: string | null
+          role: string | null
           created_at: string
         }
         Insert: {
@@ -107,6 +108,7 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           avatar_url?: string | null
+          role?: string | null
           created_at?: string
         }
         Update: {
@@ -114,6 +116,7 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           avatar_url?: string | null
+          role?: string | null
           created_at?: string
         }
       }
@@ -312,6 +315,70 @@ export type Database = {
           user_id?: string | null
           product_id?: string | null
           viewed_at?: string
+        }
+      }
+      coupons: {
+        Row: {
+          id: string
+          code: string
+          discount_type: string
+          discount_value: number
+          min_purchase_amount: number | null
+          start_date: string | null
+          end_date: string | null
+          usage_limit: number | null
+          used_count: number | null
+          is_active: boolean | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          code: string
+          discount_type: string
+          discount_value: number
+          min_purchase_amount?: number | null
+          start_date?: string | null
+          end_date?: string | null
+          usage_limit?: number | null
+          used_count?: number | null
+          is_active?: boolean | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          code?: string
+          discount_type?: string
+          discount_value?: number
+          min_purchase_amount?: number | null
+          start_date?: string | null
+          end_date?: string | null
+          usage_limit?: number | null
+          used_count?: number | null
+          is_active?: boolean | null
+          created_at?: string
+        }
+      }
+      site_settings: {
+        Row: {
+          id: string
+          key: string
+          value: Json
+          description: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          key: string
+          value: Json
+          description?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          key?: string
+          value?: Json
+          description?: string | null
+          updated_at?: string | null
         }
       }
     }

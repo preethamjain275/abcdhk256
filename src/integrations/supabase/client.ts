@@ -5,21 +5,24 @@ import type { Database } from './types';
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
-// Import the supabase client like this:
-// import { supabase } from "@/integrations/supabase/client";
-
 if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
   console.warn("Supabase credentials missing! Ensure VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY are in .env");
 }
+
+// Partition session storage by URL path to isolate Admin and User sessions
+const is_admin = () => typeof window !== 'undefined' && window.location.pathname.startsWith('/admin');
+const partition_key = is_admin() ? 'adm-session-v5' : 'usr-session-v5';
 
 export const supabase = createClient<Database>(
   SUPABASE_URL || "",
   SUPABASE_PUBLISHABLE_KEY || "",
   {
     auth: {
-      storage: localStorage,
+      storage: typeof window !== 'undefined' ? localStorage : undefined,
+      storageKey: partition_key,
       persistSession: true,
       autoRefreshToken: true,
+      detectSessionInUrl: true
     }
   }
 );

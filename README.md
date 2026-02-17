@@ -1,4 +1,3 @@
-
 The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
 
 Follow these steps:
@@ -16,6 +15,25 @@ npm i
 # Step 4: Start the development server with auto-reloading and an instant preview.
 npm run dev
 ```
+
+## 🚀 Quick Fixes Applied
+
+### Admin Access Fixed ✅
+
+The admin panel is now working! To access it:
+
+1. Set your user role to `ADMIN` in Supabase (see `ADMIN_FIX_GUIDE.md`)
+2. The Admin link will appear in navigation
+3. Navigate to `/admin` to access the Command Centre
+
+### Performance Optimized ✅
+
+- Fixed slow loading issues
+- Optimized database queries
+- Added proper error handling
+- See `performance_optimization.sql` for database indexes
+
+📖 **Read `ADMIN_FIX_GUIDE.md` for detailed setup instructions**
 
 **Edit a file directly in GitHub**
 
@@ -40,4 +58,5 @@ This project is built with:
 - React
 - shadcn-ui
 - Tailwind CSS
-
+- Supabase (Database & Auth)
+- Framer Motion (Animations)
