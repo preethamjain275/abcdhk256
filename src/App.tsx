@@ -40,7 +40,32 @@ import NotFound from "./pages/NotFound";
 
 import { SplashScreen } from "@/components/ui/SplashScreen";
 
+import { supabase } from "@/integrations/supabase/client";
+import { useEffect } from "react";
+
 const queryClient = new QueryClient();
+
+function RealtimeUpdates() {
+  useEffect(() => {
+    const channel = supabase
+      .channel('public:products')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'products' },
+        (payload) => {
+          console.log('Realtime change:', payload);
+          queryClient.invalidateQueries({ queryKey: ['products'] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  return null;
+}
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -51,6 +76,7 @@ const App = () => (
             <NotificationProvider>
               <TooltipProvider>
                 <SplashScreen />
+                {/* <RealtimeUpdates /> - Temporarily disabled to debug Orders page */}
                 <Toaster />
                 <Sonner />
                 <BrowserRouter>

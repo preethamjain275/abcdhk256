@@ -23,6 +23,7 @@ import {
   Video,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { getProductImage, getFallbackImage } from '@/lib/imageUtils';
 
 export default function ProductDetail() {
   const { id } = useParams<{ id: string }>();
@@ -45,7 +46,7 @@ export default function ProductDetail() {
   useEffect(() => {
     const fetchProduct = async () => {
       if (!id) return;
-      
+
       setIsLoading(true);
       try {
         const [productData, reviewData, related, frequently] = await Promise.all([
@@ -85,7 +86,7 @@ export default function ProductDetail() {
 
   const handleWishlist = async () => {
     if (!product) return;
-    
+
     if (isWishlisted) {
       await recommendationService.removeFromWishlist(product.id);
     } else {
@@ -171,32 +172,41 @@ export default function ProductDetail() {
                       allowFullScreen
                     />
                   ) : (
-                    <video 
-                      src={product.videoUrl} 
-                      autoPlay 
-                      controls 
+                    <video
+                      src={product.videoUrl}
+                      autoPlay
+                      controls
                       className="h-full w-full object-cover"
                     />
                   )}
                 </div>
               ) : (
-                <img
-                  src={product.images[selectedImage]}
-                  alt={product.name}
-                  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1549298916-b41d501d3772?auto=format&fit=crop&q=80&w=800';
-                  }}
-                />
+                <>
+                  {!product.images[selectedImage] && !product.videoUrl && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-muted animate-pulse">
+                      <span className="sr-only">Loading...</span>
+                    </div>
+                  )}
+                  <img
+                    src={product.images[selectedImage] || getProductImage(product.name, product.category)}
+                    alt={product.name}
+                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.onerror = null;
+                      target.src = getFallbackImage();
+                    }}
+                  />
+                </>
               )}
               {discount > 0 && (
                 <span className="absolute left-4 top-4 rounded-full bg-destructive px-3 py-1 text-sm font-semibold text-destructive-foreground z-10">
                   -{discount}%
                 </span>
               )}
-              
+
               {product.videoUrl && (
-                <button 
+                <button
                   onClick={() => setShowVideo(!showVideo)}
                   className="absolute bottom-4 right-4 rounded-full bg-black/50 p-3 text-white backdrop-blur-md transition-all hover:bg-primary z-10"
                 >
@@ -204,7 +214,7 @@ export default function ProductDetail() {
                 </button>
               )}
             </div>
-            
+
             <div className="flex flex-wrap gap-3">
               {product.images.map((image, index) => (
                 <button
@@ -221,11 +231,13 @@ export default function ProductDetail() {
                   )}
                 >
                   <img
-                    src={image}
+                    src={image || getProductImage(product.name, product.category)}
                     alt={`${product.name} ${index + 1}`}
                     className="h-full w-full object-cover rounded-lg"
                     onError={(e) => {
-                      (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1549298916-b41d501d3772?auto=format&fit=crop&q=80&w=800';
+                      const target = e.target as HTMLImageElement;
+                      target.onerror = null;
+                      target.src = getFallbackImage();
                     }}
                   />
                 </button>
@@ -243,8 +255,8 @@ export default function ProductDetail() {
                   <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/20 group-hover:bg-black/40 transition-colors">
                     <Plus className="h-6 w-6 text-white" />
                   </div>
-                  <video 
-                    src={product.videoUrl} 
+                  <video
+                    src={product.videoUrl}
                     className="h-full w-full object-cover rounded-lg"
                   />
                 </button>
@@ -257,7 +269,7 @@ export default function ProductDetail() {
             <p className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
               {product.category}
             </p>
-            
+
             <h1 className="mt-2 font-display text-3xl font-bold md:text-4xl">
               {product.name}
             </h1>
@@ -285,21 +297,21 @@ export default function ProductDetail() {
 
             {/* Price & Offers */}
             <div className="mt-4 flex items-center gap-3">
-               <span className="text-3xl font-black tracking-tight text-foreground">
-                 {formatPrice(product.price)}
-               </span>
-               {product.originalPrice && (
-                 <>
-                   <span className="text-lg text-muted-foreground line-through opacity-60">
-                     {formatPrice(product.originalPrice)}
-                   </span>
-                   <span className="text-lg font-bold text-success">
-                     {discount}% off
-                   </span>
-                 </>
-               )}
+              <span className="text-3xl font-black tracking-tight text-foreground">
+                {formatPrice(product.price)}
+              </span>
+              {product.originalPrice && (
+                <>
+                  <span className="text-lg text-muted-foreground line-through opacity-60">
+                    {formatPrice(product.originalPrice)}
+                  </span>
+                  <span className="text-lg font-bold text-success">
+                    {discount}% off
+                  </span>
+                </>
+              )}
             </div>
-            
+
             <div className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-success/10 px-3 py-1 text-xs font-bold text-success">
               <Sparkles className="h-3.5 w-3.5" />
               Special Price
@@ -327,24 +339,24 @@ export default function ProductDetail() {
 
             {/* Check Delivery Mock */}
             <div className="mt-8 p-5 rounded-2xl border border-border bg-card shadow-sm">
-               <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-sm font-bold flex items-center gap-2">
-                    <Truck className="h-4 w-4 text-muted-foreground" />
-                    Delivery
-                  </h3>
-                  <button className="text-xs font-bold text-primary hover:underline">Change</button>
-               </div>
-               <div className="flex gap-2">
-                  <input 
-                    type="text" 
-                    placeholder="Enter Delivery Pincode"
-                    className="flex-1 h-10 px-4 rounded-xl bg-secondary/30 border border-border text-sm outline-none focus:border-primary transition-all"
-                  />
-                  <button className="h-10 px-6 bg-secondary text-foreground text-xs font-black uppercase rounded-xl hover:bg-secondary/80 transition-all">Check</button>
-               </div>
-               <p className="mt-3 text-xs text-muted-foreground font-medium">
-                  Delivery by <span className="text-foreground font-bold">Today, 9 PM</span> | <span className="text-success font-bold">FREE</span>
-               </p>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-sm font-bold flex items-center gap-2">
+                  <Truck className="h-4 w-4 text-muted-foreground" />
+                  Delivery
+                </h3>
+                <button className="text-xs font-bold text-primary hover:underline">Change</button>
+              </div>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="Enter Delivery Pincode"
+                  className="flex-1 h-10 px-4 rounded-xl bg-secondary/30 border border-border text-sm outline-none focus:border-primary transition-all"
+                />
+                <button className="h-10 px-6 bg-secondary text-foreground text-xs font-black uppercase rounded-xl hover:bg-secondary/80 transition-all">Check</button>
+              </div>
+              <p className="mt-3 text-xs text-muted-foreground font-medium">
+                Delivery by <span className="text-foreground font-bold">Today, 9 PM</span> | <span className="text-success font-bold">FREE</span>
+              </p>
             </div>
 
             {/* Description */}
@@ -366,8 +378,8 @@ export default function ProductDetail() {
                       onClick={() => setSelectedColor(color)}
                       className={cn(
                         "px-4 py-2 rounded-xl text-xs font-bold transition-all border-2",
-                        selectedColor === color 
-                          ? "border-primary bg-primary text-white shadow-glow" 
+                        selectedColor === color
+                          ? "border-primary bg-primary text-white shadow-glow"
                           : "border-border bg-card hover:border-primary/50"
                       )}
                     >
@@ -388,8 +400,8 @@ export default function ProductDetail() {
                       onClick={() => setSelectedSize(size)}
                       className={cn(
                         "h-12 w-12 rounded-xl flex items-center justify-center text-sm font-bold transition-all border-2",
-                        selectedSize === size 
-                          ? "border-primary bg-primary text-white shadow-glow" 
+                        selectedSize === size
+                          ? "border-primary bg-primary text-white shadow-glow"
                           : "border-border bg-card hover:border-primary/50"
                       )}
                     >
@@ -453,7 +465,7 @@ export default function ProductDetail() {
                   <Heart className={cn('h-4 w-4', isWishlisted && 'fill-current')} />
                   {isWishlisted ? 'Saved' : 'Add to Wishlist'}
                 </button>
-                
+
                 <button className="h-12 w-12 flex items-center justify-center rounded-xl border border-border hover:bg-secondary transition-all">
                   <Share2 className="h-4 w-4" />
                 </button>
@@ -470,8 +482,8 @@ export default function ProductDetail() {
                 {product.stock > 10
                   ? 'Ready for dispatch'
                   : product.stock > 0
-                  ? `Last few items: Only ${product.stock} available`
-                  : 'Out of Stock'}
+                    ? `Last few items: Only ${product.stock} available`
+                    : 'Out of Stock'}
               </p>
             </div>
 
@@ -502,10 +514,10 @@ export default function ProductDetail() {
                   </h3>
                   <div className="flex flex-wrap gap-3">
                     {product.attributes.links.map((link, i) => (
-                      <a 
-                        key={i} 
-                        href={link.url} 
-                        target="_blank" 
+                      <a
+                        key={i}
+                        href={link.url}
+                        target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center gap-2 px-4 py-2 bg-secondary/50 hover:bg-primary/10 hover:text-primary rounded-xl text-xs font-bold transition-all border border-border group"
                       >
@@ -602,9 +614,9 @@ export default function ProductDetail() {
                   <div key={rating} className="flex items-center gap-4 text-sm">
                     <span className="w-8">{rating} star</span>
                     <div className="h-2 flex-1 rounded-full bg-secondary">
-                      <div 
-                        className="h-full rounded-full bg-primary" 
-                        style={{ width: `${rating === 5 ? 70 : rating === 4 ? 20 : 5}%` }} 
+                      <div
+                        className="h-full rounded-full bg-primary"
+                        style={{ width: `${rating === 5 ? 70 : rating === 4 ? 20 : 5}%` }}
                       />
                     </div>
                     <span className="w-8 text-muted-foreground">

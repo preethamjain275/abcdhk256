@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { 
-  X, 
-  Upload, 
-  Loader2, 
+import {
+  X,
+  Upload,
+  Loader2,
   Image as ImageIcon,
   Save,
   Plus,
@@ -21,6 +21,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface LinkItem {
   label: string;
@@ -32,26 +33,31 @@ interface FeatureItem {
   value: string;
 }
 
-export default function ProductForm({ 
-  onClose, 
+export default function ProductForm({
+  onClose,
   onSuccess,
   initialData
-}: { 
-  onClose: () => void, 
+}: {
+  onClose: () => void,
   onSuccess: () => void,
   initialData?: any // eslint-disable-line @typescript-eslint/no-explicit-any
 }) {
   const [loading, setLoading] = useState(false);
   type TabType = 'basic' | 'media' | 'features' | 'links';
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<TabType>('basic');
-  
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadError, setUploadError] = useState('');
+
   const [formData, setFormData] = useState({
     name: initialData?.name || '',
     description: initialData?.description || '',
     price: initialData?.price || '',
     stock: initialData?.stock || '',
     category: initialData?.category || '',
+    brand: initialData?.brand || '',
     images: (initialData?.images as string[]) || [],
+    image_url: initialData?.image_url || '',
     video_url: initialData?.video_url || '',
     features: (initialData?.attributes?.features as FeatureItem[]) || [],
     links: (initialData?.attributes?.links as LinkItem[]) || [],
@@ -59,6 +65,76 @@ export default function ProductForm({
   });
 
   const [newImageUrl, setNewImageUrl] = useState('');
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      setUploadError('Only JPG, PNG, and WebP files are allowed');
+      return;
+    }
+
+    setUploadError('');
+    setUploadProgress(10); // Start progress
+
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `product-${initialData?.id || 'new'}-${Date.now()}.${fileExt}`;
+      const filePath = `${fileName}`;
+
+      setUploadProgress(30);
+
+      // Try uploading
+      let { error: uploadErr } = await supabase.storage
+        .from('product-images')
+        .upload(filePath, file, {
+          upsert: true,
+        });
+
+      // Handle missing bucket
+      if (uploadErr && (uploadErr.message.includes('Bucket not found') || (uploadErr as any).statusCode === '404')) {
+        console.log('Bucket not found, attempting to create...');
+        const { error: createBucketError } = await supabase.storage.createBucket('product-images', {
+          public: true
+        });
+
+        if (createBucketError) {
+          console.error('Failed to create bucket:', createBucketError);
+          throw new Error('Bucket "product-images" not found and could not be created. Please create it manually in Supabase Dashboard.');
+        }
+
+        // Retry upload
+        const { error: retryError } = await supabase.storage
+          .from('product-images')
+          .upload(filePath, file, {
+            upsert: true,
+          });
+
+        uploadErr = retryError;
+      }
+
+      if (uploadErr) throw uploadErr;
+
+      setUploadProgress(70);
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('product-images')
+        .getPublicUrl(filePath);
+
+      setFormData(prev => ({
+        ...prev,
+        image_url: publicUrl,
+        images: prev.images.includes(publicUrl) ? prev.images : [publicUrl, ...prev.images]
+      }));
+      setUploadProgress(100);
+      toast.success('Image uploaded successfully');
+    } catch (error: any) {
+      console.error('Upload failed:', error);
+      setUploadError(error.message || 'Upload failed');
+      setUploadProgress(0);
+    }
+  };
 
   const addImage = () => {
     if (newImageUrl && !formData.images.includes(newImageUrl)) {
@@ -104,38 +180,42 @@ export default function ProductForm({
     setLoading(true);
 
     try {
-      const payload = {
+      const payload: any = {
         name: formData.name,
         description: formData.description,
         price: parseFloat(formData.price as string),
         stock: parseInt(formData.stock as string),
         category: formData.category,
-        images: formData.images,
-        video_url: formData.video_url,
+        // brand: formData.brand, // Computed column missing in DB
+        // images: formData.images, // Column missing in DB
+        // image_url: formData.image_url, // Column missing in DB
+        // video_url: formData.video_url, // Column missing in DB likely
         featured: formData.featured,
         attributes: {
-          features: formData.features,
-          links: formData.links
+          features: formData.features.map(f => ({ key: f.key, value: f.value })),
+          links: formData.links.map(l => ({ label: l.label, url: l.url }))
         }
       };
 
       let error;
-      
+
       if (initialData) {
-          const { error: updateError } = await supabase
-            .from('products')
-            .update(payload as any)
-            .eq('id', initialData.id);
-          error = updateError;
+        // Cast to any because the generated types might be out of sync or strict
+        const { error: updateError } = await (supabase
+          .from('products') as any)
+          .update(payload)
+          .eq('id', initialData.id);
+        error = updateError;
       } else {
-          const { error: insertError } = await supabase
-            .from('products')
-            .insert([payload] as any);
-          error = insertError;
+        const { error: insertError } = await (supabase
+          .from('products') as any)
+          .insert([payload]);
+        error = insertError;
       }
 
       if (error) throw error;
 
+      await queryClient.invalidateQueries({ queryKey: ['products'] });
       toast.success(initialData ? 'Product updated successfully' : 'Product created successfully');
       onSuccess();
       onClose();
@@ -155,7 +235,7 @@ export default function ProductForm({
   ];
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, scale: 0.9, y: 20 }}
       animate={{ opacity: 1, scale: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.9, y: 20 }}
@@ -177,8 +257,8 @@ export default function ProductForm({
             </p>
           </div>
         </div>
-        <button 
-          onClick={onClose} 
+        <button
+          onClick={onClose}
           className="p-2 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-xl transition-all hover:rotate-90 duration-300"
         >
           <X className="h-5 w-5 text-slate-500" />
@@ -193,8 +273,8 @@ export default function ProductForm({
             onClick={() => setActiveTab(tab.id)}
             className={cn(
               "flex items-center gap-2 px-4 py-3 text-sm font-medium transition-all relative border-b-2",
-              activeTab === tab.id 
-                ? "text-blue-500 border-blue-500 bg-blue-500/5" 
+              activeTab === tab.id
+                ? "text-blue-500 border-blue-500 bg-blue-500/5"
                 : "text-slate-500 border-transparent hover:text-slate-700 dark:hover:text-slate-300"
             )}
           >
@@ -221,10 +301,10 @@ export default function ProductForm({
                     <FileText className="h-3.5 w-3.5 text-blue-500" />
                     Product Name
                   </label>
-                  <input 
+                  <input
                     required
                     value={formData.name}
-                    onChange={e => setFormData({...formData, name: e.target.value})}
+                    onChange={e => setFormData({ ...formData, name: e.target.value })}
                     className="w-full bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-xl p-3 focus:ring-2 focus:ring-blue-500/50 outline-none dark:text-white transition-all shadow-sm"
                     placeholder="e.g. Premium Wireless Headphones"
                   />
@@ -235,13 +315,13 @@ export default function ProductForm({
                     <span className="text-blue-500 font-bold">$</span>
                     Price
                   </label>
-                  <input 
+                  <input
                     required
                     type="number"
                     min="0"
                     step="0.01"
                     value={formData.price}
-                    onChange={e => setFormData({...formData, price: e.target.value})}
+                    onChange={e => setFormData({ ...formData, price: e.target.value })}
                     className="w-full bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-xl p-3 focus:ring-2 focus:ring-blue-500/50 outline-none dark:text-white transition-all shadow-sm"
                     placeholder="0.00"
                   />
@@ -252,10 +332,10 @@ export default function ProductForm({
                     <LayoutGrid className="h-3.5 w-3.5 text-blue-500" />
                     Category
                   </label>
-                  <select 
+                  <select
                     required
                     value={formData.category}
-                    onChange={e => setFormData({...formData, category: e.target.value})}
+                    onChange={e => setFormData({ ...formData, category: e.target.value })}
                     className="w-full bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-xl p-3 focus:ring-2 focus:ring-blue-500/50 outline-none dark:text-white transition-all shadow-sm appearance-none"
                   >
                     <option value="">Select Category</option>
@@ -263,7 +343,23 @@ export default function ProductForm({
                     <option value="Clothing">Clothing</option>
                     <option value="Accessories">Accessories</option>
                     <option value="Home">Home</option>
+                    <option value="Appliances">Appliances</option>
+                    <option value="Grocery">Grocery</option>
+                    <option value="Toys">Toys</option>
+                    <option value="Beauty">Beauty</option>
                   </select>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                    Brand
+                  </label>
+                  <input
+                    value={formData.brand}
+                    onChange={e => setFormData({ ...formData, brand: e.target.value })}
+                    className="w-full bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-xl p-3 focus:ring-2 focus:ring-blue-500/50 outline-none dark:text-white transition-all shadow-sm"
+                    placeholder="e.g. Sony, Nike"
+                  />
                 </div>
 
                 <div className="space-y-2">
@@ -271,23 +367,23 @@ export default function ProductForm({
                     <Package className="h-3.5 w-3.5 text-blue-500" />
                     Stock Quantity
                   </label>
-                  <input 
+                  <input
                     required
                     type="number"
                     min="0"
                     value={formData.stock}
-                    onChange={e => setFormData({...formData, stock: e.target.value})}
+                    onChange={e => setFormData({ ...formData, stock: e.target.value })}
                     className="w-full bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-xl p-3 focus:ring-2 focus:ring-blue-500/50 outline-none dark:text-white transition-all shadow-sm"
                     placeholder="100"
                   />
                 </div>
 
                 <div className="flex items-center gap-2 pt-8">
-                  <input 
+                  <input
                     type="checkbox"
                     id="featured"
                     checked={formData.featured}
-                    onChange={e => setFormData({...formData, featured: e.target.checked})}
+                    onChange={e => setFormData({ ...formData, featured: e.target.checked })}
                     className="h-5 w-5 rounded-md border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-blue-600 focus:ring-blue-500 transition-all cursor-pointer"
                   />
                   <label htmlFor="featured" className="text-sm font-semibold text-slate-700 dark:text-slate-300 cursor-pointer">
@@ -298,10 +394,10 @@ export default function ProductForm({
 
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Detailed Description</label>
-                <textarea 
+                <textarea
                   rows={4}
                   value={formData.description}
-                  onChange={e => setFormData({...formData, description: e.target.value})}
+                  onChange={e => setFormData({ ...formData, description: e.target.value })}
                   className="w-full bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-xl p-3 focus:ring-2 focus:ring-blue-500/50 outline-none dark:text-white transition-all shadow-sm resize-none"
                   placeholder="Share the story of this product..."
                 />
@@ -328,9 +424,9 @@ export default function ProductForm({
                     {formData.images.length} Images
                   </span>
                 </div>
-                
+
                 <div className="flex gap-2">
-                  <input 
+                  <input
                     value={newImageUrl}
                     onChange={e => setNewImageUrl(e.target.value)}
                     className="flex-1 bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-xl p-3 focus:ring-2 focus:ring-pink-500/50 outline-none dark:text-white transition-all shadow-sm"
@@ -346,11 +442,47 @@ export default function ProductForm({
                   </button>
                 </div>
 
+                {/* File Upload Section */}
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                    Or Upload Image
+                  </label>
+                  <div className="flex items-center gap-4">
+                    <label className="cursor-pointer px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl transition-colors flex items-center gap-2 text-sm font-medium">
+                      <Upload className="h-4 w-4" />
+                      Choose File
+                      <input
+                        type="file"
+                        className="hidden"
+                        accept=".jpg,.jpeg,.png,.webp"
+                        onChange={handleFileUpload}
+                      />
+                    </label>
+                    {uploadProgress > 0 && uploadProgress < 100 && (
+                      <div className="flex-1 h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-blue-500 transition-all duration-300"
+                          style={{ width: `${uploadProgress}%` }}
+                        />
+                      </div>
+                    )}
+                    {uploadProgress === 100 && (
+                      <span className="text-emerald-500 text-xs font-bold">Uploaded!</span>
+                    )}
+                  </div>
+                  {uploadError && (
+                    <p className="text-xs text-red-500 font-medium">{uploadError}</p>
+                  )}
+                  {formData.image_url && (
+                    <p className="text-xs text-slate-400 truncate">Current: {formData.image_url}</p>
+                  )}
+                </div>
+
                 <div className="grid grid-cols-4 gap-4">
                   {formData.images.map((url: string, index: number) => (
                     <div key={index} className="aspect-square rounded-2xl bg-slate-200 dark:bg-slate-800 relative group overflow-hidden border-2 border-transparent hover:border-pink-500 transition-all shadow-xl">
                       <img src={url} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" alt={`Product ${index}`} />
-                      <button 
+                      <button
                         type="button"
                         onClick={() => removeImage(index)}
                         className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-all transform translate-y-2 group-hover:translate-y-0 shadow-lg"
@@ -361,8 +493,8 @@ export default function ProductForm({
                   ))}
                   {formData.images.length === 0 && (
                     <div className="aspect-square rounded-2xl border-2 border-dashed border-slate-300 dark:border-slate-700 flex flex-col items-center justify-center text-slate-400 gap-2 col-span-4 py-8">
-                       <ImageIcon className="h-8 w-8 opacity-20" />
-                       <p className="text-xs font-medium">No images added yet</p>
+                      <ImageIcon className="h-8 w-8 opacity-20" />
+                      <p className="text-xs font-medium">No images added yet</p>
                     </div>
                   )}
                 </div>
@@ -376,9 +508,9 @@ export default function ProductForm({
                 </label>
                 <div className="relative group">
                   <Video className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-purple-500 transition-colors" />
-                  <input 
+                  <input
                     value={formData.video_url}
-                    onChange={e => setFormData({...formData, video_url: e.target.value})}
+                    onChange={e => setFormData({ ...formData, video_url: e.target.value })}
                     className="w-full bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-xl p-3 pl-12 focus:ring-2 focus:ring-purple-500/50 outline-none dark:text-white transition-all shadow-sm"
                     placeholder="YouTube or Video URL... (Optional)"
                   />
@@ -415,20 +547,20 @@ export default function ProductForm({
 
               <div className="space-y-3">
                 {formData.features.map((feature, index) => (
-                  <motion.div 
+                  <motion.div
                     layout
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    key={index} 
+                    key={index}
                     className="grid grid-cols-[1fr,1.5fr,auto] gap-3 items-center"
                   >
-                    <input 
+                    <input
                       value={feature.key}
                       onChange={e => updateFeature(index, 'key', e.target.value)}
                       className="bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-sm focus:ring-2 focus:ring-emerald-500/50 outline-none dark:text-white transition-all shadow-sm"
                       placeholder="e.g. Battery Life"
                     />
-                    <input 
+                    <input
                       value={feature.value}
                       onChange={e => updateFeature(index, 'value', e.target.value)}
                       className="bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-sm focus:ring-2 focus:ring-emerald-500/50 outline-none dark:text-white transition-all shadow-sm"
@@ -445,8 +577,8 @@ export default function ProductForm({
                 ))}
                 {formData.features.length === 0 && (
                   <div className="p-8 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-3xl flex flex-col items-center justify-center gap-3 text-slate-400 bg-slate-50/50 dark:bg-slate-900/20">
-                     <Settings2 className="h-10 w-10 opacity-10" />
-                     <p className="text-sm font-medium">Define specifications for a premium listing</p>
+                    <Settings2 className="h-10 w-10 opacity-10" />
+                    <p className="text-sm font-medium">Define specifications for a premium listing</p>
                   </div>
                 )}
               </div>
@@ -481,14 +613,14 @@ export default function ProductForm({
 
               <div className="space-y-3">
                 {formData.links.map((link, index) => (
-                  <motion.div 
+                  <motion.div
                     layout
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    key={index} 
+                    key={index}
                     className="grid grid-cols-[1fr,2fr,auto] gap-3 items-center"
                   >
-                    <input 
+                    <input
                       value={link.label}
                       onChange={e => updateLink(index, 'label', e.target.value)}
                       className="bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-xl p-3 text-sm focus:ring-2 focus:ring-sky-500/50 outline-none dark:text-white transition-all shadow-sm"
@@ -496,7 +628,7 @@ export default function ProductForm({
                     />
                     <div className="relative">
                       <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
-                      <input 
+                      <input
                         value={link.url}
                         onChange={e => updateLink(index, 'url', e.target.value)}
                         className="w-full bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-xl p-3 pl-9 text-sm focus:ring-2 focus:ring-sky-500/50 outline-none dark:text-white transition-all shadow-sm"
@@ -513,10 +645,10 @@ export default function ProductForm({
                   </motion.div>
                 ))}
                 {formData.links.length === 0 && (
-                   <div className="p-8 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-3xl flex flex-col items-center justify-center gap-3 text-slate-400 bg-slate-50/50 dark:bg-slate-900/20">
-                      <LinkIcon className="h-10 w-10 opacity-10" />
-                      <p className="text-sm font-medium">Link tutorials or external resources</p>
-                   </div>
+                  <div className="p-8 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-3xl flex flex-col items-center justify-center gap-3 text-slate-400 bg-slate-50/50 dark:bg-slate-900/20">
+                    <LinkIcon className="h-10 w-10 opacity-10" />
+                    <p className="text-sm font-medium">Link tutorials or external resources</p>
+                  </div>
                 )}
               </div>
             </motion.div>
