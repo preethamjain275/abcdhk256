@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
-import { 
-  TrendingUp, 
-  Users, 
-  ShoppingCart, 
-  DollarSign, 
-  Activity, 
+import {
+  TrendingUp,
+  Users,
+  ShoppingCart,
+  DollarSign,
+  Activity,
   CreditCard,
   Package,
   ArrowUpRight,
@@ -56,7 +56,7 @@ export default function AdminDashboard() {
           toast.success('New Order Received!', {
             description: `Order #${payload.new.id.slice(0, 8)} has been placed.`
           });
-          
+
           // Refresh data
           fetchDashboardData();
         }
@@ -71,7 +71,7 @@ export default function AdminDashboard() {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      
+
       // Fetch Orders Stats
       const { data: ordersData } = await (supabase
         .from('orders')
@@ -106,11 +106,11 @@ export default function AdminDashboard() {
   };
 
   if (loading) {
-      return (
-          <div className="flex items-center justify-center p-20">
-              <div className="animate-spin h-10 w-10 border-4 border-cyan-500 rounded-full border-t-transparent"></div>
-          </div>
-      );
+    return (
+      <div className="flex items-center justify-center p-20">
+        <div className="animate-spin h-10 w-10 border-4 border-cyan-500 rounded-full border-t-transparent"></div>
+      </div>
+    );
   }
 
   return (
@@ -118,69 +118,69 @@ export default function AdminDashboard() {
       {/* Header Section */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-           <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-cyan-500 bg-clip-text text-transparent">Dashboard Overview</h1>
-           <p className="text-slate-500 dark:text-slate-400 mt-1">Welcome back, here's what's happening today.</p>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-cyan-500 bg-clip-text text-transparent">Dashboard Overview</h1>
+          <p className="text-slate-500 dark:text-slate-400 mt-1">Welcome back, here's what's happening today.</p>
         </div>
         <div className="flex items-center gap-3">
-            <button 
-                onClick={() => {
-                    toast.success('Report downloaded', { description: 'sales_report_2026.csv' });
-                }}
-                className="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-medium shadow-sm hover:shadow-md transition-shadow"
-            >
-                Export Report
-            </button>
-            <button 
-                onClick={() => {
-                   // We emit a custom event or use navigation State to open modal in ProductManager? 
-                   // Simpler: Navigate to products page
-                   window.location.href = '/admin/products'; 
-                }}
-                className="px-4 py-2 bg-cyan-600 text-white rounded-lg text-sm font-medium shadow-lg shadow-cyan-500/30 hover:bg-cyan-700 transition-colors"
-            >
-                + Add Product
-            </button>
+          <button
+            onClick={() => {
+              toast.success('Report downloaded', { description: 'sales_report_2026.csv' });
+            }}
+            className="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-medium shadow-sm hover:shadow-md transition-shadow"
+          >
+            Export Report
+          </button>
+          <button
+            onClick={() => {
+              // We emit a custom event or use navigation State to open modal in ProductManager? 
+              // Simpler: Navigate to products page
+              window.location.href = '/admin/products';
+            }}
+            className="px-4 py-2 bg-cyan-600 text-white rounded-lg text-sm font-medium shadow-lg shadow-cyan-500/30 hover:bg-cyan-700 transition-colors"
+          >
+            + Add Product
+          </button>
         </div>
       </div>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-         <StatCard 
-            title="Total Revenue" 
-            value={formatPrice(stats.totalRevenue)} 
-            trend="+12.5%" 
-            trendUp={true} 
-            icon={DollarSign} 
-            color="bg-emerald-500" 
-         />
-         <StatCard 
-            title="Total Orders" 
-            value={stats.totalOrders.toString()} 
-            trend="+5.2%" 
-            trendUp={true} 
-            icon={ShoppingCart} 
-            color="bg-blue-500" 
-         />
-         <StatCard 
-            title="Total Customers" 
-            value={stats.totalCustomers.toString()} 
-            trend="+2.4%" 
-            trendUp={true} 
-            icon={Users} 
-            color="bg-purple-500" 
-         />
-         <StatCard 
-            title="Active Orders" 
-            value={stats.activeOrders.toString()} 
-            trend="-1.0%" 
-            trendUp={false} 
-            icon={Activity} 
-            color="bg-orange-500" 
-         />
+        <StatCard
+          title="Total Revenue"
+          value={formatPrice(stats.totalRevenue)}
+          trend="+12.5%"
+          trendUp={true}
+          icon={DollarSign}
+          color="bg-emerald-500"
+        />
+        <StatCard
+          title="Total Orders"
+          value={stats.totalOrders.toString()}
+          trend="+5.2%"
+          trendUp={true}
+          icon={ShoppingCart}
+          color="bg-blue-500"
+        />
+        <StatCard
+          title="Total Customers"
+          value={stats.totalCustomers.toString()}
+          trend="+2.4%"
+          trendUp={true}
+          icon={Users}
+          color="bg-purple-500"
+        />
+        <StatCard
+          title="Active Orders"
+          value={stats.activeOrders.toString()}
+          trend="-1.0%"
+          trendUp={false}
+          icon={Activity}
+          color="bg-orange-500"
+        />
       </div>
 
       {/* Main Content Grid */}
-    {/*  <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      {/*  <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           
           <div className="lg:col-span-2 bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700/50">
               <div className="flex justify-between items-center mb-6">
@@ -212,7 +212,7 @@ export default function AdminDashboard() {
                   </ResponsiveContainer>
               </div>
           </div>
-          
+
           <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700/50">
               <div className="flex justify-between items-center mb-6">
                   <h3 className="font-bold text-lg text-slate-800 dark:text-white">Recent Transactions</h3>
@@ -256,36 +256,174 @@ export default function AdminDashboard() {
           </div>
 
       </div> */}
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        <!-- LEFT COLUMN -->
+        <div class="space-y-6">
+
+          <!-- Multi-Agent Network -->
+          <div class="glass rounded-xl p-6 h-[350px] overflow-y-auto">
+            <h3 class="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">
+              Multi-Agent Network
+            </h3>
+
+            <div class="grid grid-cols-2 gap-2">
+              <!-- Agent Card -->
+              <div class="flex items-center gap-3 p-3 rounded-lg bg-secondary/50">
+                <div class="min-w-0">
+                  <p class="text-xs font-medium truncate text-foreground">
+                    Repo Intelligence
+                  </p>
+                  <p class="text-[10px] text-muted-foreground truncate">
+                    Mapping project structure
+                  </p>
+                </div>
+              </div>
+
+              <!-- Duplicate this block for other agents -->
+            </div>
+          </div>
+
+
+          <!-- Failure Classification -->
+          <div class="glass rounded-xl p-5">
+            <h3 class="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+              Failure Classification
+            </h3>
+
+            <div class="flex items-center gap-4">
+              <div class="w-32 h-32">
+                <!-- Chart Container -->
+              </div>
+
+              <div class="flex flex-col gap-1.5 text-xs">
+                <div class="flex items-center gap-2">
+                  <span class="w-2.5 h-2.5 rounded-sm bg-teal-400"></span>
+                  <span class="text-muted-foreground">IMPORT</span>
+                  <span class="font-mono font-semibold">1</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+
+        <!-- MIDDLE COLUMN -->
+        <div class="space-y-6">
+
+          <!-- Live Logs (STRICT 350px FIXED) -->
+          <div class="glass rounded-xl p-4 flex flex-col h-[350px]">
+
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+                Live Logs
+              </h3>
+              <span class="text-[10px] font-mono text-muted-foreground">
+                35 entries
+              </span>
+            </div>
+
+            <!-- Scroll Area -->
+            <div class="flex-1 min-h-0 overflow-y-auto space-y-1 font-mono text-xs">
+
+              <div class="flex gap-2 p-1.5 rounded bg-primary/10">
+                <span class="text-muted-foreground shrink-0">00:00.0</span>
+                <span class="font-semibold text-primary shrink-0">[SYSTEM]</span>
+                <span>Initializing HealOps autonomous healing pipeline...</span>
+              </div>
+
+              <!-- Repeat log entries here -->
+
+            </div>
+          </div>
+
+        </div>
+
+
+        <!-- RIGHT COLUMN -->
+        <div class="space-y-6">
+
+          <!-- Pre/Post Fix Cards -->
+          <div class="grid grid-cols-2 gap-4">
+
+            <div class="glass rounded-xl p-5 flex flex-col items-center">
+              <p class="text-xs font-semibold text-muted-foreground uppercase mb-3">
+                Pre-Fix
+              </p>
+              <span class="text-2xl font-bold">61</span>
+            </div>
+
+            <div class="glass rounded-xl p-5 flex flex-col items-center">
+              <p class="text-xs font-semibold text-muted-foreground uppercase mb-3">
+                Post-Fix
+              </p>
+              <span class="text-2xl font-bold">96</span>
+            </div>
+
+          </div>
+
+          <!-- Fix Assessment -->
+          <div class="glass rounded-xl p-5">
+            <h3 class="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4">
+              Fix Assessment
+            </h3>
+
+            <div class="space-y-4 text-xs">
+
+              <div>
+                <div class="flex justify-between mb-1">
+                  <span>Confidence</span>
+                  <span class="font-mono font-semibold text-primary">96%</span>
+                </div>
+                <div class="h-2 bg-secondary rounded-full overflow-hidden">
+                  <div class="h-full bg-primary" style="width:96%"></div>
+                </div>
+              </div>
+
+              <div class="flex justify-between">
+                <span>Risk Level</span>
+                <span class="px-2 py-0.5 rounded-full bg-accent/10 text-accent">
+                  Low Risk
+                </span>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+
+      </div>
     </div>
   );
 }
 
 function StatCard({ title, value, trend, trendUp, icon: Icon, color }: any) {
-    return (
-        <motion.div 
-            whileHover={{ y: -5 }}
-            className="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-100 dark:border-slate-700/50 shadow-sm relative overflow-hidden group"
-        >
-            <div className="flex justify-between items-start mb-4 relative z-10">
-                <div>
-                    <p className="text-slate-500 dark:text-slate-400 text-xs font-semibold uppercase tracking-wider mb-1">{title}</p>
-                    <h3 className="text-2xl font-black text-slate-800 dark:text-white tracking-tight">{value}</h3>
-                </div>
-                <div className={cn("p-3 rounded-xl text-white shadow-lg", color)}>
-                    <Icon className="h-5 w-5" />
-                </div>
-            </div>
-            
-            <div className="flex items-center gap-2 relative z-10">
-                <span className={cn("flex items-center text-xs font-bold px-2 py-0.5 rounded-full", trendUp ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700")}>
-                    {trendUp ? <ArrowUpRight className="h-3 w-3 mr-1" /> : <ArrowDownRight className="h-3 w-3 mr-1" />}
-                    {trend}
-                </span>
-                <span className="text-xs text-slate-400 font-medium">vs last month</span>
-            </div>
+  return (
+    <motion.div
+      whileHover={{ y: -5 }}
+      className="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-100 dark:border-slate-700/50 shadow-sm relative overflow-hidden group"
+    >
+      <div className="flex justify-between items-start mb-4 relative z-10">
+        <div>
+          <p className="text-slate-500 dark:text-slate-400 text-xs font-semibold uppercase tracking-wider mb-1">{title}</p>
+          <h3 className="text-2xl font-black text-slate-800 dark:text-white tracking-tight">{value}</h3>
+        </div>
+        <div className={cn("p-3 rounded-xl text-white shadow-lg", color)}>
+          <Icon className="h-5 w-5" />
+        </div>
+      </div>
 
-            {/* Decorative Element */}
-            <div className="absolute -bottom-4 -right-4 h-24 w-24 bg-slate-50 dark:bg-slate-700/30 rounded-full group-hover:scale-150 transition-transform duration-500 z-0"></div>
-        </motion.div>
-    );
+      <div className="flex items-center gap-2 relative z-10">
+        <span className={cn("flex items-center text-xs font-bold px-2 py-0.5 rounded-full", trendUp ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700")}>
+          {trendUp ? <ArrowUpRight className="h-3 w-3 mr-1" /> : <ArrowDownRight className="h-3 w-3 mr-1" />}
+          {trend}
+        </span>
+        <span className="text-xs text-slate-400 font-medium">vs last month</span>
+      </div>
+
+      {/* Decorative Element */}
+      <div className="absolute -bottom-4 -right-4 h-24 w-24 bg-slate-50 dark:bg-slate-700/30 rounded-full group-hover:scale-150 transition-transform duration-500 z-0"></div>
+    </motion.div>
+  );
 }
