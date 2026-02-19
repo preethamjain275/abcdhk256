@@ -1,5 +1,5 @@
 
-const https = require('https');
+import https from 'https';
 
 const url = "https://nijohqvyjsqrgslafjbq.supabase.co/storage/v1/object/public/product-images/probe_file";
 

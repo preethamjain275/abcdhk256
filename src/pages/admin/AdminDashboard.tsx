@@ -180,9 +180,8 @@ export default function AdminDashboard() {
       </div>
 
       {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    {/*  <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           
-          {/* Chart Section */}
           <div className="lg:col-span-2 bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700/50">
               <div className="flex justify-between items-center mb-6">
                   <h3 className="font-bold text-lg text-slate-800 dark:text-white">Revenue Analytics</h3>
@@ -213,8 +212,7 @@ export default function AdminDashboard() {
                   </ResponsiveContainer>
               </div>
           </div>
-
-          {/* Recent Orders Section */}
+          
           <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700/50">
               <div className="flex justify-between items-center mb-6">
                   <h3 className="font-bold text-lg text-slate-800 dark:text-white">Recent Transactions</h3>
@@ -257,7 +255,7 @@ export default function AdminDashboard() {
               </div>
           </div>
 
-      </div>
+      </div> */}
     </div>
   );
 }
